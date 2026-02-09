@@ -1,4 +1,9 @@
-"""LangGraph implementation of the RAG benchmark."""
+"""LangGraph implementation of the RAG benchmark.
+
+Uses a fixed retrieve→generate pipeline with a LangGraph StateGraph.
+Same architecture as Pydantic AI and smolagents implementations for
+fair comparison: embed raw question → retrieve top-k → generate with context.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +14,7 @@ from typing import Annotated
 
 import chromadb
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from openai import OpenAI
 from typing_extensions import TypedDict
@@ -21,6 +26,12 @@ EMBEDDING_MODEL = "text-embedding-3-small"
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
 TOP_K = 3
+
+SYSTEM_PROMPT = (
+    "You are a precise RAG assistant. Answer the question based ONLY on "
+    "the provided context. Cite the source document names in your answer. "
+    "If the context doesn't contain enough information to answer, say so."
+)
 
 
 def _chunk_text(text: str, chunk_size: int, overlap: int) -> list[str]:
@@ -91,8 +102,8 @@ class LangGraphRAG:
                 for doc, meta in zip(
                     results["documents"][0], results["metadatas"][0]
                 ):
-                    chunks.append(doc)
                     source = meta.get("source", "unknown")
+                    chunks.append(f"[Source: {source}]\n{doc}")
                     if source not in sources:
                         sources.append(source)
 
@@ -108,14 +119,7 @@ class LangGraphRAG:
 
             llm = ChatOpenAI(model=model, temperature=0)
             messages = [
-                SystemMessage(
-                    content=(
-                        "You are a precise RAG assistant. Answer the question "
-                        "based ONLY on the provided context. Cite the source "
-                        "document names. If the context doesn't contain the "
-                        "answer, say so."
-                    )
-                ),
+                SystemMessage(content=SYSTEM_PROMPT),
                 HumanMessage(
                     content=f"Context:\n{context}\n\nQuestion: {question}"
                 ),

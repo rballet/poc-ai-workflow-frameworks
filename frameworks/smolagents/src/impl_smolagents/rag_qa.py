@@ -1,4 +1,10 @@
-"""smolagents implementation of the RAG benchmark."""
+"""smolagents implementation of the RAG benchmark.
+
+Uses a fixed retrieve→generate pipeline (same as LangGraph and Pydantic AI)
+to ensure a fair comparison. The retrieval step embeds the raw question and
+fetches top-k chunks from chromadb. The generation step uses a smolagents
+LiteLLMModel directly (no CodeAgent) with the retrieved context.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +15,7 @@ from functools import partial
 
 import chromadb
 from openai import OpenAI
-from smolagents import CodeAgent, LiteLLMModel, Tool
+from smolagents import LiteLLMModel
 
 from shared.interface import Answer, Document, RunResult, UsageStats
 
@@ -18,6 +24,12 @@ EMBEDDING_MODEL = "text-embedding-3-small"
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
 TOP_K = 3
+
+SYSTEM_PROMPT = (
+    "You are a precise RAG assistant. Answer the question based ONLY on "
+    "the provided context. Cite the source document names in your answer. "
+    "If the context doesn't contain enough information to answer, say so."
+)
 
 
 def _chunk_text(text: str, chunk_size: int, overlap: int) -> list[str]:
@@ -31,58 +43,34 @@ def _chunk_text(text: str, chunk_size: int, overlap: int) -> list[str]:
     return chunks
 
 
-class RetrieverTool(Tool):
-    """Custom smolagents tool for semantic document retrieval."""
+def _generate_sync(model: LiteLLMModel, system_prompt: str, user_message: str) -> dict:
+    """Call the LLM synchronously via smolagents' LiteLLMModel."""
+    import litellm
 
-    name = "retriever"
-    description = (
-        "Uses semantic search to retrieve document chunks from the knowledge "
-        "base that are most relevant to the query. Returns the top matching "
-        "passages with their source document names."
+    response = litellm.completion(
+        model=model.model_id,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message},
+        ],
+        temperature=0,
     )
-    inputs = {
-        "query": {
-            "type": "string",
-            "description": (
-                "The search query to find relevant documents. "
-                "Use affirmative form rather than a question."
-            ),
-        }
+
+    choice = response.choices[0]
+    usage = response.usage
+
+    return {
+        "answer": choice.message.content or "",
+        "input_tokens": usage.prompt_tokens if usage else 0,
+        "output_tokens": usage.completion_tokens if usage else 0,
     }
-    output_type = "string"
-
-    def __init__(self, collection, openai_client, top_k=TOP_K, **kwargs):
-        super().__init__(**kwargs)
-        self.collection = collection
-        self.openai_client = openai_client
-        self.top_k = top_k
-
-    def forward(self, query: str) -> str:
-        response = self.openai_client.embeddings.create(
-            model=EMBEDDING_MODEL, input=query
-        )
-        query_embedding = response.data[0].embedding
-
-        results = self.collection.query(
-            query_embeddings=[query_embedding],
-            n_results=self.top_k,
-        )
-
-        if not results["documents"] or not results["documents"][0]:
-            return "No relevant documents found."
-
-        chunks = []
-        for doc_text, meta in zip(
-            results["documents"][0], results["metadatas"][0]
-        ):
-            source = meta.get("source", "unknown")
-            chunks.append(f"[Source: {source}]\n{doc_text}")
-
-        return "\nRetrieved documents:\n" + "\n\n---\n\n".join(chunks)
 
 
 class SmolAgentsRAG:
-    """RAGFramework implementation using smolagents."""
+    """RAGFramework implementation using smolagents.
+
+    Uses a fixed retrieve→generate pipeline for fair comparison.
+    """
 
     def __init__(self, model_id: str = MODEL_ID) -> None:
         self._model_id = model_id
@@ -132,43 +120,53 @@ class SmolAgentsRAG:
         )
 
     async def query(self, question: str) -> RunResult:
-        """Answer a question using the smolagents RAG pipeline."""
-        model = LiteLLMModel(model_id=self._model_id, temperature=0.1)
-        retriever_tool = RetrieverTool(
-            collection=self._collection,
-            openai_client=self._ensure_openai(),
-        )
-
-        agent = CodeAgent(
-            tools=[retriever_tool],
-            model=model,
-            max_steps=4,
-            verbosity_level=0,
-        )
+        """Answer a question using the fixed retrieve→generate pipeline."""
+        openai_client = self._ensure_openai()
+        model = LiteLLMModel(model_id=self._model_id, temperature=0)
 
         start = time.perf_counter()
 
-        # smolagents is sync-only; run in a thread for async compatibility
-        smol_result = await asyncio.to_thread(
-            partial(agent.run, question, return_full_result=True)
+        # Step 1: Retrieve — embed the raw question, search chromadb
+        embed_response = openai_client.embeddings.create(
+            model=EMBEDDING_MODEL, input=question
+        )
+        query_embedding = embed_response.data[0].embedding
+
+        results = self._collection.query(
+            query_embeddings=[query_embedding],
+            n_results=TOP_K,
+        )
+
+        # Extract chunks and sources
+        context_chunks = []
+        sources = []
+        if results["documents"] and results["documents"][0]:
+            for doc_text, meta in zip(
+                results["documents"][0], results["metadatas"][0]
+            ):
+                source = meta.get("source", "unknown")
+                context_chunks.append(f"[Source: {source}]\n{doc_text}")
+                if source not in sources:
+                    sources.append(source)
+
+        context = "\n\n---\n\n".join(context_chunks)
+        user_message = f"Context:\n{context}\n\nQuestion: {question}"
+
+        # Step 2: Generate — call LLM via litellm (smolagents' backend)
+        # smolagents is sync-only, so we bridge to async
+        gen_result = await asyncio.to_thread(
+            partial(_generate_sync, model, SYSTEM_PROMPT, user_message)
         )
 
         elapsed = time.perf_counter() - start
 
-        # Extract token usage
-        input_tokens = 0
-        output_tokens = 0
-        if hasattr(smol_result, "token_usage") and smol_result.token_usage is not None:
-            input_tokens = getattr(smol_result.token_usage, "input_tokens", 0) or 0
-            output_tokens = getattr(smol_result.token_usage, "output_tokens", 0) or 0
-
-        answer_text = str(smol_result.output) if smol_result.output else ""
-        sources = self._extract_sources(agent)
+        input_tokens = gen_result.get("input_tokens", 0)
+        output_tokens = gen_result.get("output_tokens", 0)
 
         return RunResult(
             answer=Answer(
                 question_id="",
-                text=answer_text,
+                text=gen_result["answer"],
                 sources_used=sources,
             ),
             usage=UsageStats(
@@ -179,18 +177,6 @@ class SmolAgentsRAG:
                 model_name=self._model_id,
             ),
         )
-
-    def _extract_sources(self, agent) -> list[str]:
-        """Extract unique source document names from agent memory."""
-        sources = set()
-        for step in agent.memory.steps:
-            observations = getattr(step, "observations", "")
-            if observations and "[Source:" in str(observations):
-                for line in str(observations).split("\n"):
-                    if "[Source:" in line:
-                        source = line.split("[Source:")[1].split("]")[0].strip()
-                        sources.add(source)
-        return sorted(sources)
 
     async def cleanup(self) -> None:
         """Delete the chromadb collection."""
