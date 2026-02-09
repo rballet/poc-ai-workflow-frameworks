@@ -14,7 +14,7 @@ Current scenarios: RAG Q&A
 - Evaluation: custom harness with LLM-as-judge (gpt-4o-mini)
 
 ## Project Structure
-- `shared/` — Core interfaces, eval harness, reporting (all frameworks depend on this)
+- `shared-lib/` — Core interfaces, eval harness, reporting (Python package name: `shared`)
 - `scenarios/` — Test scenarios with documents and questions (framework-agnostic)
 - `frameworks/` — One subdir per framework, each is a uv workspace member
 - `scripts/` — CLI entry points for running evals and comparisons
@@ -22,7 +22,7 @@ Current scenarios: RAG Q&A
 
 ## Build & Run
 ```bash
-uv sync                                                           # install all
+uv sync --all-packages                                                # install all
 uv run python scripts/run_eval.py --framework pydantic_ai --scenario rag_qa  # one framework
 uv run python scripts/run_eval.py --all --scenario rag_qa                    # all frameworks
 uv run python scripts/compare.py results/*.json                              # compare
