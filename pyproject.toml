@@ -5,6 +5,7 @@ description = "Benchmark comparing AI workflow frameworks on identical scenarios
 requires-python = ">=3.12"
 dependencies = [
     "pyyaml>=6.0",
+    "python-dotenv>=1.0",
 ]
 
 [tool.uv.workspace]

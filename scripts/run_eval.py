@@ -10,7 +10,10 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from dotenv import load_dotenv
 import yaml
+
+load_dotenv()  # Load .env file from project root
 
 from shared.interface import Document, Question
 from shared.eval.harness import FrameworkEvaluation, evaluate_framework
