@@ -1,0 +1,21 @@
+# Pydantic AI Implementation
+
+Framework: Pydantic AI 1.56.0
+Dependencies: pydantic-ai, chromadb, openai
+
+## Architecture
+Uses a Pydantic AI `Agent` with a `@agent.tool` for retrieval:
+1. Agent receives the question and uses the `retrieve` tool
+2. Tool embeds the query, searches chromadb, returns formatted chunks
+3. Agent generates answer based on retrieved context
+
+## Key APIs
+- `Agent` from `pydantic_ai` — created lazily via `_build_agent()` to avoid import-time API key checks
+- `RunContext[Deps]` — first parameter of `@agent.tool`, invisible to the LLM
+- `result.usage()` returns `RunUsage` with `input_tokens`, `output_tokens`, `total_tokens`
+- `result.all_messages()` for extracting source information from tool responses
+
+## Notes
+- Agent initialization deferred to first use (`_ensure_agent()`)
+- Model specified as `"openai:gpt-4o-mini"` (Pydantic AI format)
+- Token fields: `input_tokens`/`output_tokens` (not `prompt_tokens`/`completion_tokens`)
