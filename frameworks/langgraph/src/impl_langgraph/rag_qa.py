@@ -20,6 +20,7 @@ from openai import OpenAI
 from typing_extensions import TypedDict
 
 from shared.interface import Answer, Document, RunResult, UsageStats
+from shared.retrieval import EmbeddingStore, chunk_text
 
 MODEL = "gpt-4o-mini"
 EMBEDDING_MODEL = "text-embedding-3-small"
@@ -32,17 +33,6 @@ SYSTEM_PROMPT = (
     "the provided context. Cite the source document names in your answer. "
     "If the context doesn't contain enough information to answer, say so."
 )
-
-
-def _chunk_text(text: str, chunk_size: int, overlap: int) -> list[str]:
-    """Split text into overlapping chunks."""
-    chunks = []
-    start = 0
-    while start < len(text):
-        end = start + chunk_size
-        chunks.append(text[start:end])
-        start = end - overlap
-    return chunks
 
 
 class RAGState(TypedDict):
@@ -59,13 +49,25 @@ class RAGState(TypedDict):
 class LangGraphRAG:
     """RAGFramework implementation using LangGraph."""
 
-    def __init__(self, model: str = MODEL) -> None:
+    def __init__(
+        self,
+        model: str = MODEL,
+        embedding_store: EmbeddingStore | None = None,
+    ) -> None:
         self._model = model
-        self._chroma_client = chromadb.Client()
-        self._openai_client: OpenAI | None = None
-        self._collection: chromadb.Collection | None = None
-        self._collection_name = f"langgraph_{uuid.uuid4().hex[:8]}"
+        self._embedding_store = embedding_store
         self._graph = None
+        # Only create chromadb/openai when running standalone; set None when using shared store
+        if embedding_store is None:
+            self._chroma_client = chromadb.Client()
+            self._openai_client: OpenAI | None = None
+            self._collection: chromadb.Collection | None = None
+            self._collection_name = f"langgraph_{uuid.uuid4().hex[:8]}"
+        else:
+            self._chroma_client = None
+            self._openai_client = None
+            self._collection = None
+            self._collection_name = None
 
     @property
     def name(self) -> str:
@@ -78,13 +80,21 @@ class LangGraphRAG:
 
     def _build_graph(self):
         """Build the LangGraph StateGraph with retrieve and generate nodes."""
+        embedding_store = self._embedding_store
         collection = self._collection
-        openai_client = self._ensure_openai()
+        openai_client = self._openai_client if embedding_store is None else None
         model = self._model
 
         async def retrieve(state: RAGState) -> dict:
-            """Embed the question and retrieve top-k chunks from chromadb."""
+            """Embed the question and retrieve top-k chunks."""
             question = state["question"]
+
+            if embedding_store is not None:
+                result = embedding_store.retrieve(question)
+                return {
+                    "context_chunks": result.chunks,
+                    "context_sources": result.sources,
+                }
 
             response = openai_client.embeddings.create(
                 model=EMBEDDING_MODEL, input=question
@@ -145,6 +155,10 @@ class LangGraphRAG:
 
     async def ingest(self, documents: list[Document]) -> None:
         """Chunk documents, embed, and store in chromadb."""
+        if self._embedding_store is not None:
+            self._graph = self._build_graph()
+            return  # shared store already has the data
+
         openai_client = self._ensure_openai()
         self._collection = self._chroma_client.create_collection(
             name=self._collection_name
@@ -155,11 +169,10 @@ class LangGraphRAG:
         all_metadatas: list[dict] = []
 
         for doc in documents:
-            chunks = _chunk_text(doc.content, CHUNK_SIZE, CHUNK_OVERLAP)
-            for i, chunk in enumerate(chunks):
-                chunk_id = f"{doc.source}_{i}"
-                all_chunks.append(chunk)
-                all_ids.append(chunk_id)
+            chunks = chunk_text(doc.content, CHUNK_SIZE, CHUNK_OVERLAP)
+            for i, text in enumerate(chunks):
+                all_chunks.append(text)
+                all_ids.append(f"{doc.source}_{i}")
                 all_metadatas.append({"source": doc.source})
 
         response = openai_client.embeddings.create(
@@ -214,7 +227,7 @@ class LangGraphRAG:
 
     async def cleanup(self) -> None:
         """Delete the chromadb collection."""
-        if self._collection is not None:
+        if self._embedding_store is None and self._collection is not None:
             self._chroma_client.delete_collection(self._collection_name)
             self._collection = None
         self._graph = None

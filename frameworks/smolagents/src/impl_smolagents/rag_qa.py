@@ -18,6 +18,7 @@ from openai import OpenAI
 from smolagents import LiteLLMModel
 
 from shared.interface import Answer, Document, RunResult, UsageStats
+from shared.retrieval import EmbeddingStore, chunk_text
 
 MODEL_ID = "openai/gpt-4o-mini"
 EMBEDDING_MODEL = "text-embedding-3-small"
@@ -30,17 +31,6 @@ SYSTEM_PROMPT = (
     "the provided context. Cite the source document names in your answer. "
     "If the context doesn't contain enough information to answer, say so."
 )
-
-
-def _chunk_text(text: str, chunk_size: int, overlap: int) -> list[str]:
-    """Split text into overlapping chunks."""
-    chunks = []
-    start = 0
-    while start < len(text):
-        end = start + chunk_size
-        chunks.append(text[start:end])
-        start = end - overlap
-    return chunks
 
 
 def _generate_sync(model: LiteLLMModel, system_prompt: str, user_message: str) -> dict:
@@ -72,12 +62,19 @@ class SmolAgentsRAG:
     Uses a fixed retrieve→generate pipeline for fair comparison.
     """
 
-    def __init__(self, model_id: str = MODEL_ID) -> None:
+    def __init__(
+        self,
+        model_id: str = MODEL_ID,
+        embedding_store: EmbeddingStore | None = None,
+    ) -> None:
         self._model_id = model_id
-        self._chroma_client = chromadb.Client()
-        self._openai_client: OpenAI | None = None
-        self._collection: chromadb.Collection | None = None
-        self._collection_name = f"smolagents_{uuid.uuid4().hex[:8]}"
+        self._embedding_store = embedding_store
+        # Only create chromadb/openai when running standalone
+        if embedding_store is None:
+            self._chroma_client = chromadb.Client()
+            self._openai_client: OpenAI | None = None
+            self._collection: chromadb.Collection | None = None
+            self._collection_name = f"smolagents_{uuid.uuid4().hex[:8]}"
 
     @property
     def name(self) -> str:
@@ -90,6 +87,9 @@ class SmolAgentsRAG:
 
     async def ingest(self, documents: list[Document]) -> None:
         """Chunk documents, embed, and store in chromadb."""
+        if self._embedding_store is not None:
+            return  # shared store already has the data
+
         openai_client = self._ensure_openai()
         self._collection = self._chroma_client.create_collection(
             name=self._collection_name
@@ -100,11 +100,10 @@ class SmolAgentsRAG:
         all_metadatas: list[dict] = []
 
         for doc in documents:
-            chunks = _chunk_text(doc.content, CHUNK_SIZE, CHUNK_OVERLAP)
-            for i, chunk in enumerate(chunks):
-                chunk_id = f"{doc.source}_{i}"
-                all_chunks.append(chunk)
-                all_ids.append(chunk_id)
+            chunks = chunk_text(doc.content, CHUNK_SIZE, CHUNK_OVERLAP)
+            for i, text in enumerate(chunks):
+                all_chunks.append(text)
+                all_ids.append(f"{doc.source}_{i}")
                 all_metadatas.append({"source": doc.source})
 
         response = openai_client.embeddings.create(
@@ -121,33 +120,37 @@ class SmolAgentsRAG:
 
     async def query(self, question: str) -> RunResult:
         """Answer a question using the fixed retrieve→generate pipeline."""
-        openai_client = self._ensure_openai()
         model = LiteLLMModel(model_id=self._model_id, temperature=0)
 
         start = time.perf_counter()
 
-        # Step 1: Retrieve — embed the raw question, search chromadb
-        embed_response = openai_client.embeddings.create(
-            model=EMBEDDING_MODEL, input=question
-        )
-        query_embedding = embed_response.data[0].embedding
+        # Step 1: Retrieve
+        if self._embedding_store is not None:
+            retrieval = self._embedding_store.retrieve(question)
+            context_chunks = retrieval.chunks
+            sources = retrieval.sources
+        else:
+            openai_client = self._ensure_openai()
+            embed_response = openai_client.embeddings.create(
+                model=EMBEDDING_MODEL, input=question
+            )
+            query_embedding = embed_response.data[0].embedding
 
-        results = self._collection.query(
-            query_embeddings=[query_embedding],
-            n_results=TOP_K,
-        )
+            results = self._collection.query(
+                query_embeddings=[query_embedding],
+                n_results=TOP_K,
+            )
 
-        # Extract chunks and sources
-        context_chunks = []
-        sources = []
-        if results["documents"] and results["documents"][0]:
-            for doc_text, meta in zip(
-                results["documents"][0], results["metadatas"][0]
-            ):
-                source = meta.get("source", "unknown")
-                context_chunks.append(f"[Source: {source}]\n{doc_text}")
-                if source not in sources:
-                    sources.append(source)
+            context_chunks = []
+            sources = []
+            if results["documents"] and results["documents"][0]:
+                for doc_text, meta in zip(
+                    results["documents"][0], results["metadatas"][0]
+                ):
+                    source = meta.get("source", "unknown")
+                    context_chunks.append(f"[Source: {source}]\n{doc_text}")
+                    if source not in sources:
+                        sources.append(source)
 
         context = "\n\n---\n\n".join(context_chunks)
         user_message = f"Context:\n{context}\n\nQuestion: {question}"
@@ -180,6 +183,6 @@ class SmolAgentsRAG:
 
     async def cleanup(self) -> None:
         """Delete the chromadb collection."""
-        if self._collection is not None:
+        if self._embedding_store is None and self._collection is not None:
             self._chroma_client.delete_collection(self._collection_name)
             self._collection = None

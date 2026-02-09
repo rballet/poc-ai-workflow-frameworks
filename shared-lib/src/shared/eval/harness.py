@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from shared.interface import Document, Question, RAGFramework, RunResult
 from shared.eval.llm_judge import JudgeResult, judge_answer
 from shared.eval.metrics import compute_cost
 from shared.eval.retrieval import retrieval_precision, retrieval_recall
+from shared.eval.code_quality import StaticMetrics, compute_static_metrics
+from shared.eval.code_review import CodeReviewScores, review_code
 
 
 @dataclass
@@ -38,6 +41,16 @@ class QuestionEvaluation:
 
 
 @dataclass
+class CodeQualityEvaluation:
+    """Combined code quality assessment for a framework implementation."""
+
+    source_file: str
+    source_sloc: int
+    static_metrics: StaticMetrics
+    code_review: CodeReviewScores | None = None
+
+
+@dataclass
 class FrameworkEvaluation:
     """Aggregate evaluation for one framework across all questions."""
 
@@ -53,6 +66,8 @@ class FrameworkEvaluation:
     avg_faithfulness: float = 0.0
     avg_retrieval_precision: float = 0.0
     avg_retrieval_recall: float = 0.0
+    # Code quality (per-framework, not per-question)
+    code_quality: CodeQualityEvaluation | None = None
 
 
 def _compute_aggregates(evaluation: FrameworkEvaluation) -> None:
@@ -76,8 +91,25 @@ async def evaluate_framework(
     questions: list[Question],
     scenario_name: str,
     judge_model: str = "gpt-4o-mini",
+    source_path: str | None = None,
+    framework_key: str | None = None,
+    scenario_description: str = "",
+    skip_code_review: bool = False,
 ) -> FrameworkEvaluation:
-    """Run a full evaluation of one framework on one scenario."""
+    """Run a full evaluation of one framework on one scenario.
+
+    Parameters
+    ----------
+    source_path:
+        Path to the framework's implementation source file.  When provided,
+        static analysis and (optionally) LLM code review are run.
+    framework_key:
+        Short identifier like ``"langgraph"`` used to classify imports.
+    scenario_description:
+        Human-readable description passed to the LLM code reviewer.
+    skip_code_review:
+        If *True*, skip the LLM code review (static analysis only).
+    """
     # 1. Ingest documents (not part of per-question timing)
     await framework.ingest(documents)
 
@@ -142,7 +174,30 @@ async def evaluate_framework(
     # 6. Aggregates
     _compute_aggregates(evaluation)
 
-    # 7. Cleanup
+    # 7. Code quality (per-framework, not per-question)
+    if source_path is not None:
+        source_code = Path(source_path).read_text()
+        static = compute_static_metrics(
+            source_code, framework_key or framework.name
+        )
+
+        code_review_result = None
+        if not skip_code_review:
+            code_review_result = await review_code(
+                source_code=source_code,
+                framework_name=framework.name,
+                scenario_description=scenario_description,
+                model=judge_model,
+            )
+
+        evaluation.code_quality = CodeQualityEvaluation(
+            source_file=source_path,
+            source_sloc=static.sloc,
+            static_metrics=static,
+            code_review=code_review_result,
+        )
+
+    # 8. Cleanup
     await framework.cleanup()
 
     return evaluation

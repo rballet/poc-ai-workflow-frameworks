@@ -22,9 +22,22 @@ def load_results(paths: list[str]) -> list[dict]:
     return results
 
 
+def _fmt(val, fmt: str) -> str:
+    """Format a single value according to a format spec."""
+    if fmt == "s":
+        return str(val)
+    if fmt == ",d":
+        return f"{int(val):,}"
+    if fmt.endswith("%"):
+        return f"{val:{fmt}}"
+    if "cost" in fmt:
+        return f"${val:.4f}"
+    return f"{val:{fmt}}"
+
+
 def generate_comparison_report(results: list[dict]) -> str:
     """Generate a markdown comparison report from multiple framework results."""
-    lines = []
+    lines: list[str] = []
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
     lines.append("# Framework Comparison Report")
@@ -36,7 +49,7 @@ def generate_comparison_report(results: list[dict]) -> str:
         lines.append(f"Questions: {n_questions}")
     lines.append("")
 
-    # Summary table
+    # --- Summary table ---
     lines.append("## Summary")
     lines.append("")
 
@@ -69,7 +82,85 @@ def generate_comparison_report(results: list[dict]) -> str:
 
     lines.append("")
 
-    # Per-question breakdown
+    # --- Code Quality: Static Metrics ---
+    has_code_quality = any(r.get("code_quality") for r in results)
+    if has_code_quality:
+        lines.append("## Code Quality — Static Metrics")
+        lines.append("")
+
+        headers = ["Metric"] + [r["framework_name"] for r in results]
+        lines.append("| " + " | ".join(headers) + " |")
+        lines.append("| " + " | ".join(["---"] * len(headers)) + " |")
+
+        static_rows = [
+            ("Source Lines (SLOC)", "sloc", "d"),
+            ("Comment Ratio", "comment_ratio", ".0%"),
+            ("Avg Cyclomatic Complexity", "avg_cyclomatic_complexity", ".1f"),
+            ("Max Cyclomatic Complexity", "max_cyclomatic_complexity", "d"),
+            ("Complexity Grade", "complexity_grade", "s"),
+            ("Maintainability Index", "maintainability_index", ".1f"),
+            ("Maintainability Grade", "maintainability_grade", "s"),
+            ("Halstead Volume", "halstead_volume", ".0f"),
+            ("Halstead Difficulty", "halstead_difficulty", ".1f"),
+            ("Halstead Bugs (est.)", "halstead_bugs", ".2f"),
+            ("Total Imports", "num_imports", "d"),
+            ("Framework Imports", "num_framework_imports", "d"),
+            ("Classes", "num_classes", "d"),
+            ("Functions", "num_functions", "d"),
+            ("Type Annotation Coverage", "type_annotation_ratio", ".0%"),
+        ]
+
+        for label, key, fmt in static_rows:
+            row = [label]
+            for r in results:
+                cq = r.get("code_quality")
+                sm = cq.get("static_metrics") if cq else None
+                if sm and key in sm:
+                    row.append(_fmt(sm[key], fmt))
+                else:
+                    row.append("N/A")
+            lines.append("| " + " | ".join(row) + " |")
+
+        lines.append("")
+
+        # --- Code Quality: LLM Code Review ---
+        has_review = any(
+            (r.get("code_quality") or {}).get("code_review") for r in results
+        )
+        if has_review:
+            lines.append("## Code Quality — LLM Code Review")
+            lines.append("")
+
+            headers = ["Criterion"] + [r["framework_name"] for r in results]
+            lines.append("| " + " | ".join(headers) + " |")
+            lines.append("| " + " | ".join(["---"] * len(headers)) + " |")
+
+            review_rows = [
+                ("Readability", "readability"),
+                ("Idiomatic Usage", "idiomatic_usage"),
+                ("Error Handling", "error_handling"),
+                ("Extensibility", "extensibility"),
+                ("Testability", "testability"),
+                ("Documentation", "documentation"),
+                ("Abstraction", "abstraction"),
+                ("**Average**", "avg_score"),
+            ]
+
+            for label, key in review_rows:
+                row = [label]
+                for r in results:
+                    cr = (r.get("code_quality") or {}).get("code_review")
+                    if cr and key in cr:
+                        val = cr[key]
+                        fmt = ".1f" if key == "avg_score" else "d"
+                        row.append(f"{val:{fmt}}")
+                    else:
+                        row.append("N/A")
+                lines.append("| " + " | ".join(row) + " |")
+
+            lines.append("")
+
+    # --- Per-question breakdown ---
     lines.append("## Per-Question Results")
     lines.append("")
 

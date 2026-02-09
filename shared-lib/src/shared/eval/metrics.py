@@ -10,11 +10,24 @@ COST_PER_1K_TOKENS: dict[str, dict[str, float]] = {
 }
 
 
+def _normalize_model_name(model_name: str) -> str:
+    """Strip provider prefixes (e.g. 'openai/gpt-4o-mini' → 'gpt-4o-mini').
+
+    Frameworks like smolagents (via LiteLLM) report model names with a
+    provider prefix.  We normalise so the cost lookup table works regardless
+    of how the framework reports the model.
+    """
+    if "/" in model_name:
+        return model_name.rsplit("/", 1)[-1]
+    return model_name
+
+
 def compute_cost(
     model_name: str, prompt_tokens: int, completion_tokens: int
 ) -> float:
     """Estimate USD cost for a single LLM call. Returns 0.0 for unknown models."""
-    rates = COST_PER_1K_TOKENS.get(model_name, {"prompt": 0.0, "completion": 0.0})
+    normalised = _normalize_model_name(model_name)
+    rates = COST_PER_1K_TOKENS.get(normalised, {"prompt": 0.0, "completion": 0.0})
     return (prompt_tokens / 1000 * rates["prompt"]) + (
         completion_tokens / 1000 * rates["completion"]
     )
