@@ -1,0 +1,16 @@
+[project]
+name = "poc-ai-workflow-frameworks"
+version = "0.1.0"
+description = "Benchmark comparing AI workflow frameworks on identical scenarios"
+requires-python = ">=3.12"
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[tool.uv.workspace]
+members = [
+    "shared",
+    "frameworks/langgraph",
+    "frameworks/pydantic_ai",
+    "frameworks/smolagents",
+]

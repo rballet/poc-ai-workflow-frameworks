@@ -1,0 +1,75 @@
+scenario: rag_qa
+description: Simple RAG Q&A over small technical documents
+
+questions:
+  - id: q1
+    text: "What is the GIL in Python and how does it affect concurrency?"
+    expected_answer: >
+      The GIL (Global Interpreter Lock) is a mutex in CPython that allows only
+      one thread to execute Python bytecode at a time. This means CPU-bound
+      tasks do not benefit from threading. For CPU-bound work, use
+      multiprocessing instead. For I/O-bound work, threading and asyncio
+      both work well because the GIL is released during I/O operations.
+    expected_sources:
+      - python_concurrency.md
+
+  - id: q2
+    text: "What is the difference between a 301 and a 302 HTTP redirect?"
+    expected_answer: >
+      A 301 is a permanent redirect, telling the client and search engines
+      that the resource has permanently moved to a new URL. A 302 is a
+      temporary redirect, meaning the original URL is still valid and the
+      client should continue using it for future requests.
+    expected_sources:
+      - http_status_codes.md
+
+  - id: q3
+    text: "When should I use git rebase instead of git merge?"
+    expected_answer: >
+      Use rebase to keep a linear commit history, typically when updating a
+      feature branch with changes from main. Use merge when you want to
+      preserve the full branch history, especially for shared branches or
+      pull requests. Never rebase commits that have been pushed to a shared
+      branch.
+    expected_sources:
+      - git_branching.md
+
+  - id: q4
+    text: "Should I use threading or asyncio for making many HTTP requests in Python?"
+    expected_answer: >
+      Both work for I/O-bound tasks like HTTP requests, since the GIL is
+      released during I/O. asyncio is generally preferred for high-concurrency
+      I/O because it uses a single thread with an event loop, avoiding thread
+      overhead. Threading is simpler for smaller-scale concurrent I/O.
+    expected_sources:
+      - python_concurrency.md
+
+  - id: q5
+    text: "What HTTP status code should a server return when a resource is not found?"
+    expected_answer: >
+      A 404 Not Found status code indicates that the server cannot find the
+      requested resource. The URL may be wrong, or the resource may have been
+      removed without a redirect.
+    expected_sources:
+      - http_status_codes.md
+
+  - id: q6
+    text: "Explain the GitHub Flow branching strategy."
+    expected_answer: >
+      GitHub Flow is a lightweight branching model: create a feature branch
+      from main, make commits, open a pull request for review, and merge
+      back to main after approval. Main is always deployable. It is simpler
+      than Git Flow and well-suited for continuous deployment.
+    expected_sources:
+      - git_branching.md
+
+  - id: q7
+    text: "What are the tradeoffs between multiprocessing and asyncio in Python?"
+    expected_answer: >
+      Multiprocessing uses separate OS processes, bypasses the GIL, and is
+      best for CPU-bound work, but has higher memory overhead and IPC
+      complexity. asyncio uses a single thread with cooperative multitasking,
+      is best for I/O-bound work, has low overhead, but requires async/await
+      throughout the codebase.
+    expected_sources:
+      - python_concurrency.md
