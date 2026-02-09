@@ -29,6 +29,9 @@ uv run python scripts/run_eval.py --all --scenario rag_qa
 # Run without LLM code review (faster, no extra API cost)
 uv run python scripts/run_eval.py --all --scenario rag_qa --skip-code-review
 
+# Disable shared embedding store (each framework embeds independently)
+uv run python scripts/run_eval.py --all --scenario rag_qa --no-shared-store
+
 # Compare results
 uv run python scripts/compare.py results/*.json -o results/comparison.md
 ```
@@ -40,6 +43,7 @@ uv run python scripts/compare.py results/*.json -o results/comparison.md
 ├── shared-lib/              # Framework-agnostic interface and evaluation engine
 │   └── src/shared/
 │       ├── interface.py     # RAGFramework Protocol — the contract all frameworks implement
+│       ├── retrieval.py     # Shared embedding store with query caching
 │       └── eval/
 │           ├── harness.py      # Orchestrates ingest → query → judge → aggregate
 │           ├── llm_judge.py    # LLM-as-judge scoring (correctness, completeness, faithfulness)
@@ -83,7 +87,7 @@ The evaluation harness feeds the same documents and questions to each implementa
 
 ## Design Principles
 
-- **Fair comparison** — all frameworks use the same model, temperature, prompt, chunking strategy, and retrieval method. Differences in results reflect the framework, not the configuration.
+- **Fair comparison** — all frameworks use the same model, temperature, prompt, chunking strategy, and retrieval method. A shared embedding store ensures identical retrieval results and avoids redundant API calls. Differences in results reflect the framework, not the configuration.
 - **Framework-agnostic scenarios** — scenarios are defined as YAML + documents. Any framework that satisfies the Protocol can run them.
 - **Code quality analysis** — each framework's implementation is evaluated for complexity, maintainability, and coding standards via static analysis (radon) and LLM-as-judge code review.
 - **Extensible** — add a framework by implementing the Protocol; add a scenario by writing a spec + questions.
