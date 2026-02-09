@@ -1273,7 +1273,7 @@ requires-dist = [
     { name = "langchain-openai", specifier = ">=0.3" },
     { name = "langchain-text-splitters", specifier = ">=0.3" },
     { name = "langgraph", specifier = ">=1.0" },
-    { name = "shared", editable = "shared" },
+    { name = "shared", editable = "shared-lib" },
 ]
 
 [[package]]
@@ -1292,7 +1292,7 @@ requires-dist = [
     { name = "chromadb", specifier = ">=0.5" },
     { name = "openai", specifier = ">=1.0" },
     { name = "pydantic-ai", specifier = ">=1.0" },
-    { name = "shared", editable = "shared" },
+    { name = "shared", editable = "shared-lib" },
 ]
 
 [[package]]
@@ -1310,7 +1310,7 @@ dependencies = [
 requires-dist = [
     { name = "chromadb", specifier = ">=0.5" },
     { name = "openai", specifier = ">=1.0" },
-    { name = "shared", editable = "shared" },
+    { name = "shared", editable = "shared-lib" },
     { name = "smolagents", specifier = ">=1.0" },
 ]
 
@@ -3721,7 +3721,7 @@ wheels = [
 [[package]]
 name = "shared"
 version = "0.1.0"
-source = { editable = "shared" }
+source = { editable = "shared-lib" }
 dependencies = [
     { name = "jinja2" },
     { name = "openai" },

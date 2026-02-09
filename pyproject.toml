@@ -9,7 +9,7 @@ dependencies = [
 
 [tool.uv.workspace]
 members = [
-    "shared",
+    "shared-lib",
     "frameworks/langgraph",
     "frameworks/pydantic_ai",
     "frameworks/smolagents",
