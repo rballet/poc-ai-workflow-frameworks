@@ -19,6 +19,8 @@ from shared.interface import Document, Question
 from shared.eval.harness import FrameworkEvaluation, evaluate_framework
 from shared.retrieval import EmbeddingStore
 
+from compare import generate_comparison_report
+
 ROOT = Path(__file__).resolve().parent.parent
 SCENARIOS_DIR = ROOT / "scenarios"
 RESULTS_DIR = ROOT / "results"
@@ -229,10 +231,11 @@ async def main():
         print(f"  Ingested {len(documents)} documents, store ready.")
 
     frameworks_to_run = FRAMEWORKS if args.all else [args.framework]
+    evaluations: list[FrameworkEvaluation] = []
 
     for fw in frameworks_to_run:
         try:
-            await run_single(
+            evaluation = await run_single(
                 fw,
                 args.scenario,
                 args.judge_model,
@@ -243,10 +246,21 @@ async def main():
                 questions=questions,
                 spec=spec,
             )
+            evaluations.append(evaluation)
         except Exception as e:
             print(f"\nError evaluating {fw}: {e}")
             import traceback
             traceback.print_exc()
+
+    # Generate comparison markdown from collected results
+    if evaluations:
+        comparison_report = generate_comparison_report(
+            [dataclasses.asdict(e) for e in evaluations]
+        )
+        comparison_path = RESULTS_DIR / f"comparison_{args.scenario}.md"
+        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+        comparison_path.write_text(comparison_report)
+        print(f"\nComparison report written to: {comparison_path}")
 
     # Cleanup shared store
     if embedding_store is not None:
