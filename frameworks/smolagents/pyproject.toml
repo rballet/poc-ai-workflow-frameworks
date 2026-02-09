@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "smolagents implementation of the RAG benchmark"
 requires-python = ">=3.12"
 dependencies = [
-    "smolagents>=1.0",
+    "smolagents[litellm]>=1.0",
     "chromadb>=0.5",
     "openai>=1.0",
     "shared",
