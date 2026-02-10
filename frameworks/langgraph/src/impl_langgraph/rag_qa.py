@@ -7,10 +7,8 @@ fair comparison: embed raw question → retrieve top-k → generate with context
 
 from __future__ import annotations
 
-import operator
 import time
 import uuid
-from typing import Annotated
 from typing import Any
 
 import chromadb
@@ -22,7 +20,6 @@ from typing_extensions import TypedDict
 
 from shared.interface import Answer, Document, RunResult, UsageStats
 from shared.retrieval import EmbeddingStore, RetrievalResult, chunk_text
-from shared.retrieval_strategy import RetrievalStrategyConfig, iterative_retrieve
 
 MODEL = "gpt-4o-mini"
 EMBEDDING_MODEL = "text-embedding-3-small"
@@ -41,12 +38,12 @@ class RAGState(TypedDict):
     """State for the RAG graph."""
 
     question: str
-    context_chunks: Annotated[list[str], operator.add]
-    context_sources: Annotated[list[str], operator.add]
+    context_chunks: list[str]
+    context_sources: list[str]
     answer: str
     input_tokens: int
     output_tokens: int
-    query_trace: Annotated[list[str], operator.add]
+    query_trace: list[str]
 
 
 class LangGraphRAG:
@@ -72,7 +69,8 @@ class LangGraphRAG:
             self._collection = None
             self._collection_name = None
         self._mode = "baseline"
-        self._strategy = RetrievalStrategyConfig()
+        self._top_k = TOP_K
+        self._max_context_chunks = TOP_K
 
     @property
     def name(self) -> str:
@@ -92,16 +90,12 @@ class LangGraphRAG:
         scenario_config: dict[str, Any],
         mode_config: dict[str, Any],
     ) -> None:
-        """Configure retrieval strategy per benchmark mode."""
+        """Configure runtime parameters for this scenario implementation."""
         _ = (scenario_name, scenario_type)
         self._mode = mode
-        top_k = int(mode_config.get("top_k", scenario_config.get("top_k", TOP_K)))
-        rounds_default = 1 if mode == "baseline" else 3
-        self._strategy = RetrievalStrategyConfig(
-            top_k=top_k,
-            retrieval_rounds=int(mode_config.get("retrieval_rounds", rounds_default)),
-            max_context_chunks=int(mode_config.get("max_context_chunks", top_k)),
-            max_followup_queries=int(mode_config.get("max_followup_queries", top_k)),
+        self._top_k = int(mode_config.get("top_k", scenario_config.get("top_k", TOP_K)))
+        self._max_context_chunks = int(
+            mode_config.get("max_context_chunks", self._top_k)
         )
 
     def _retrieve_once(self, query: str, top_k: int) -> RetrievalResult:
@@ -131,24 +125,16 @@ class LangGraphRAG:
 
     def _build_graph(self):
         """Build the LangGraph StateGraph with retrieve and generate nodes."""
-        embedding_store = self._embedding_store
-        collection = self._collection
-        openai_client = self._openai_client if embedding_store is None else None
         model = self._model
 
         async def retrieve(state: RAGState) -> dict:
             """Embed the question and retrieve top-k chunks."""
             question = state["question"]
-            _ = (embedding_store, collection, openai_client)
-            retrieval_run = iterative_retrieve(
-                question=question,
-                retrieve_fn=self._retrieve_once,
-                config=self._strategy,
-            )
+            retrieval_run = self._retrieve_once(question, top_k=self._top_k)
             return {
-                "context_chunks": retrieval_run.retrieval.chunks,
-                "context_sources": retrieval_run.retrieval.sources,
-                "query_trace": retrieval_run.query_trace,
+                "context_chunks": retrieval_run.chunks[: self._max_context_chunks],
+                "context_sources": retrieval_run.sources,
+                "query_trace": [question],
             }
 
         async def generate(state: RAGState) -> dict:

@@ -26,7 +26,7 @@ uv run python scripts/run_eval.py --framework pydantic_ai --scenario rag_qa
 # Run all frameworks
 uv run python scripts/run_eval.py --all --scenario rag_qa
 
-# Run capability mode (iterative retrieval + scenario profile metrics)
+# Run capability mode (scenario-specific capability workflow + profile metrics)
 uv run python scripts/run_eval.py --all --scenario multihop_qa --mode capability
 
 # Run without LLM code review (faster, no extra API cost)
@@ -48,7 +48,6 @@ uv run python scripts/compare.py results/*.json -o results/comparison.md
 │       ├── interface.py     # RAGFramework Protocol — the contract all frameworks implement
 │       ├── scenario.py      # Scenario loader + normalized scenario metadata
 │       ├── retrieval.py     # Shared embedding store with query caching
-│       ├── retrieval_strategy.py # Baseline/capability retrieval strategies
 │       └── eval/
 │           ├── harness.py      # Orchestrates ingest → query → judge → aggregate
 │           ├── profiles.py     # Scenario-specific quality metrics
@@ -89,7 +88,7 @@ class RAGFramework(Protocol):
     async def cleanup(self) -> None: ...
 ```
 
-Frameworks can optionally implement `ConfigurableFramework.configure(...)` to adapt behavior by scenario mode (`baseline` vs `capability`) without changing the base protocol.
+Frameworks can optionally implement `ConfigurableFramework.configure(...)` to adapt behavior by scenario mode (`baseline` vs `capability`) without changing the base protocol. Scenario-specific implementations (e.g. `multihop_qa.py`) are preferred for advanced behavior.
 
 The evaluation harness feeds the same documents and questions to each implementation, then collects metrics through a shared pipeline. See [METRICS.md](METRICS.md) for details on what is measured and how.
 
@@ -106,7 +105,7 @@ The evaluation harness feeds the same documents and questions to each implementa
 
 1. Create `frameworks/<name>/` with a `pyproject.toml` depending on `shared`
 2. Implement a class satisfying `RAGFramework` in `src/impl_<name>/rag_qa.py`
-3. Optionally implement `configure(...)` for mode-aware capability behavior
+3. Optionally implement `configure(...)` for scenario-specific mode behavior
 4. Register it in `scripts/run_eval.py` → `get_framework()`
 5. Add the workspace member to the root `pyproject.toml`
 

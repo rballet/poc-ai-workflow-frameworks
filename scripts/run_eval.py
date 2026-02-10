@@ -243,7 +243,10 @@ async def main():
         "--mode",
         choices=["baseline", "capability"],
         default="baseline",
-        help="Evaluation mode. baseline=fixed pipeline, capability=framework-tuned strategy.",
+        help=(
+            "Evaluation mode. baseline=fixed scenario pipeline, "
+            "capability=scenario-specific framework extensions."
+        ),
     )
     parser.add_argument("--judge-model", default="gpt-4o-mini", help="Model for LLM judge")
     parser.add_argument(

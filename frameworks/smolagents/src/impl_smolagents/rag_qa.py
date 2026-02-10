@@ -20,7 +20,6 @@ from smolagents import LiteLLMModel
 
 from shared.interface import Answer, Document, RunResult, UsageStats
 from shared.retrieval import EmbeddingStore, RetrievalResult, chunk_text
-from shared.retrieval_strategy import RetrievalStrategyConfig, iterative_retrieve
 
 MODEL_ID = "openai/gpt-4o-mini"
 EMBEDDING_MODEL = "text-embedding-3-small"
@@ -78,7 +77,8 @@ class SmolAgentsRAG:
             self._collection: chromadb.Collection | None = None
             self._collection_name = f"smolagents_{uuid.uuid4().hex[:8]}"
         self._mode = "baseline"
-        self._strategy = RetrievalStrategyConfig()
+        self._top_k = TOP_K
+        self._max_context_chunks = TOP_K
 
     @property
     def name(self) -> str:
@@ -98,16 +98,12 @@ class SmolAgentsRAG:
         scenario_config: dict[str, Any],
         mode_config: dict[str, Any],
     ) -> None:
-        """Configure retrieval strategy per benchmark mode."""
+        """Configure runtime parameters for this scenario implementation."""
         _ = (scenario_name, scenario_type)
         self._mode = mode
-        top_k = int(mode_config.get("top_k", scenario_config.get("top_k", TOP_K)))
-        rounds_default = 1 if mode == "baseline" else 3
-        self._strategy = RetrievalStrategyConfig(
-            top_k=top_k,
-            retrieval_rounds=int(mode_config.get("retrieval_rounds", rounds_default)),
-            max_context_chunks=int(mode_config.get("max_context_chunks", top_k)),
-            max_followup_queries=int(mode_config.get("max_followup_queries", top_k)),
+        self._top_k = int(mode_config.get("top_k", scenario_config.get("top_k", TOP_K)))
+        self._max_context_chunks = int(
+            mode_config.get("max_context_chunks", self._top_k)
         )
 
     def _retrieve_once(self, query: str, top_k: int) -> RetrievalResult:
@@ -177,14 +173,9 @@ class SmolAgentsRAG:
 
         start = time.perf_counter()
 
-        # Step 1: Retrieve (baseline single-pass, capability iterative)
-        retrieval_run = iterative_retrieve(
-            question=question,
-            retrieve_fn=self._retrieve_once,
-            config=self._strategy,
-        )
-        context_chunks = retrieval_run.retrieval.chunks
-        sources = retrieval_run.retrieval.sources
+        retrieval = self._retrieve_once(question, self._top_k)
+        context_chunks = retrieval.chunks[: self._max_context_chunks]
+        sources = retrieval.sources
 
         context = "\n\n---\n\n".join(context_chunks)
         user_message = f"Context:\n{context}\n\nQuestion: {question}"
@@ -207,7 +198,7 @@ class SmolAgentsRAG:
                 sources_used=sources,
                 metadata={
                     "mode": self._mode,
-                    "query_trace": retrieval_run.query_trace,
+                    "query_trace": [question],
                 },
             ),
             usage=UsageStats(

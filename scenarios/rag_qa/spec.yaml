@@ -15,10 +15,7 @@ evaluation:
 modes:
   baseline:
     top_k: 3
-    retrieval_rounds: 1
     max_context_chunks: 3
   capability:
     top_k: 3
-    retrieval_rounds: 2
-    max_context_chunks: 6
-    max_followup_queries: 3
+    max_context_chunks: 3

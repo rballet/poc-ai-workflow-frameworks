@@ -19,7 +19,7 @@ Each `rag_qa.py` should:
 
 Mode-aware behavior:
 - `baseline` mode should preserve fair, minimal retrieval pipelines.
-- `capability` mode may use iterative/planned retrieval under scenario budget constraints.
+- `capability` mode should be scenario-specific (for example in `multihop_qa.py`) and can use iterative/planned retrieval under scenario budget constraints.
 
 ## Adding a New Framework
 1. Create `frameworks/<name>/` with `pyproject.toml` and `src/impl_<name>/`
