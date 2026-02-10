@@ -1,0 +1,167 @@
+scenario: multihop_qa
+description: Multi-hop RAG Q&A requiring fact-chaining across DevOps infrastructure documents
+
+questions:
+  - id: q1
+    text: "What project runs on server prod-api-03?"
+    expected_answer: >
+      Server prod-api-03 runs Project Aurora, the customer analytics platform.
+    expected_sources:
+      - server_registry.md
+
+  - id: q2
+    text: "What are the incident response time guarantees for the Platinum SLA tier?"
+    expected_answer: >
+      The Platinum SLA tier guarantees an incident response time of 15 minutes
+      for P1 incidents and 30 minutes for P2 incidents. The resolution targets
+      are 1 hour for P1 and 4 hours for P2.
+    expected_sources:
+      - sla_policies.md
+
+  - id: q3
+    text: "Which datacenter houses the server that runs Project Aurora?"
+    expected_answer: >
+      Project Aurora runs on server prod-api-03, which is in rack R-415.
+      Rack R-415 is in the Portland datacenter (PDX-1), located in the
+      us-west region.
+    expected_sources:
+      - server_registry.md
+      - datacenter_locations.md
+    metadata:
+      multi_hop: true
+      required_hops:
+        - id: aurora_server
+          any_of: ["prod-api-03", "Project Aurora runs on server prod-api-03"]
+          source: server_registry.md
+        - id: aurora_rack
+          any_of: ["R-415", "rack R-415"]
+          source: server_registry.md
+        - id: rack_to_datacenter
+          any_of: ["Portland datacenter", "PDX-1", "us-west"]
+          source: datacenter_locations.md
+
+  - id: q4
+    text: "Who is the current on-call engineer for the team that owns Project Helios?"
+    expected_answer: >
+      Project Helios (payment processing API) is owned by the Payments
+      Engineering team. The current on-call primary engineer is Kevin Nakamura.
+    expected_sources:
+      - team_directory.md
+
+  - id: q5
+    text: "What was the root cause of the most recent incident that affected the server running Project Aurora?"
+    expected_answer: >
+      Project Aurora runs on prod-api-03. The most recent incident affecting
+      that server was INC-2025-042, a P1 network partition in the Portland
+      datacenter caused by a firmware bug in the top-of-rack switch
+      (Arista 7280R3) that triggered a spanning tree reconvergence event.
+    expected_sources:
+      - server_registry.md
+      - incident_log.md
+    metadata:
+      multi_hop: true
+      required_hops:
+        - id: aurora_server
+          any_of: ["prod-api-03"]
+          source: server_registry.md
+        - id: recent_incident
+          any_of: ["INC-2025-042", "network partition"]
+          source: incident_log.md
+        - id: incident_cause
+          any_of: ["firmware bug", "Arista 7280R3", "spanning tree reconvergence"]
+          source: incident_log.md
+
+  - id: q6
+    text: "What SLA tier applies to datacenters in the us-west region, and what is its uptime guarantee?"
+    expected_answer: >
+      The us-west region (which includes the Portland datacenter PDX-1) is
+      covered by the Gold SLA tier. The Gold tier guarantees 99.95% uptime,
+      which allows no more than 21.6 minutes of downtime per month.
+    expected_sources:
+      - datacenter_locations.md
+      - sla_policies.md
+    metadata:
+      multi_hop: true
+      required_hops:
+        - id: region
+          any_of: ["us-west"]
+          source: datacenter_locations.md
+        - id: sla_tier
+          any_of: ["Gold SLA tier", "Gold tier"]
+          source: sla_policies.md
+        - id: uptime
+          any_of: ["99.95% uptime", "21.6 minutes"]
+          source: sla_policies.md
+
+  - id: q7
+    text: "What is the uptime guarantee for the server hosting Project Aurora?"
+    expected_answer: >
+      Project Aurora runs on prod-api-03 in rack R-415 (server registry).
+      Rack R-415 is in the Portland datacenter in the us-west region
+      (datacenter locations). The us-west region is covered by the Gold SLA
+      tier, which guarantees 99.95% uptime (SLA policies).
+    expected_sources:
+      - server_registry.md
+      - datacenter_locations.md
+      - sla_policies.md
+    metadata:
+      multi_hop: true
+      required_hops:
+        - id: aurora_server
+          any_of: ["prod-api-03"]
+          source: server_registry.md
+        - id: rack_mapping
+          any_of: ["R-415", "Portland datacenter", "PDX-1", "us-west"]
+          source: datacenter_locations.md
+        - id: sla_mapping
+          any_of: ["Gold tier", "99.95% uptime"]
+          source: sla_policies.md
+
+  - id: q8
+    text: "Which engineer should be contacted about the network partition incident that occurred at the Portland datacenter?"
+    expected_answer: >
+      The network partition incident (INC-2025-042) at the Portland datacenter
+      affected server prod-api-03, which runs Project Aurora. Project Aurora is
+      owned by the Platform Infrastructure team. The current on-call primary
+      engineer for that team is Priya Patel.
+    expected_sources:
+      - incident_log.md
+      - server_registry.md
+      - team_directory.md
+    metadata:
+      multi_hop: true
+      required_hops:
+        - id: incident_server
+          any_of: ["INC-2025-042", "prod-api-03"]
+          source: incident_log.md
+        - id: server_project
+          any_of: ["Project Aurora", "Aurora"]
+          source: server_registry.md
+        - id: owner_oncall
+          any_of: ["Priya Patel"]
+          source: team_directory.md
+
+  - id: q9
+    text: "What is the maximum incident response time for P1 incidents affecting Project Helios, given its server's datacenter location?"
+    expected_answer: >
+      Project Helios runs on prod-api-01 in rack R-201 (server registry).
+      Rack R-201 is in the Ashburn datacenter in the us-east region
+      (datacenter locations). The us-east region is covered by the Platinum
+      SLA tier, which requires a P1 incident response time of 15 minutes
+      (SLA policies).
+    expected_sources:
+      - server_registry.md
+      - datacenter_locations.md
+      - sla_policies.md
+    metadata:
+      multi_hop: true
+      required_hops:
+        - id: helios_server
+          any_of: ["prod-api-01", "R-201"]
+          source: server_registry.md
+        - id: datacenter_region
+          any_of: ["Ashburn", "IAD-1", "us-east"]
+          source: datacenter_locations.md
+        - id: p1_response
+          any_of: ["Platinum", "15 minutes"]
+          source: sla_policies.md

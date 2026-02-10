@@ -1,6 +1,6 @@
-name: rag_qa
+name: multihop_qa
 version: "1.0"
-description: "Simple RAG Q&A - load documents, embed, answer via retrieval"
+description: "Multi-hop RAG Q&A - questions requiring fact-chaining across multiple documents"
 scenario_type: rag_qa
 documents_dir: documents/
 questions_file: questions.yaml
@@ -11,7 +11,7 @@ config:
   chunk_overlap: 50
   top_k: 3
 evaluation:
-  profile: default
+  profile: multihop_chain_qa
 modes:
   baseline:
     top_k: 3
@@ -19,6 +19,6 @@ modes:
     max_context_chunks: 3
   capability:
     top_k: 3
-    retrieval_rounds: 2
-    max_context_chunks: 6
-    max_followup_queries: 3
+    retrieval_rounds: 3
+    max_context_chunks: 8
+    max_followup_queries: 4

@@ -12,13 +12,15 @@ import asyncio
 import time
 import uuid
 from functools import partial
+from typing import Any
 
 import chromadb
 from openai import OpenAI
 from smolagents import LiteLLMModel
 
 from shared.interface import Answer, Document, RunResult, UsageStats
-from shared.retrieval import EmbeddingStore, chunk_text
+from shared.retrieval import EmbeddingStore, RetrievalResult, chunk_text
+from shared.retrieval_strategy import RetrievalStrategyConfig, iterative_retrieve
 
 MODEL_ID = "openai/gpt-4o-mini"
 EMBEDDING_MODEL = "text-embedding-3-small"
@@ -75,6 +77,8 @@ class SmolAgentsRAG:
             self._openai_client: OpenAI | None = None
             self._collection: chromadb.Collection | None = None
             self._collection_name = f"smolagents_{uuid.uuid4().hex[:8]}"
+        self._mode = "baseline"
+        self._strategy = RetrievalStrategyConfig()
 
     @property
     def name(self) -> str:
@@ -84,6 +88,55 @@ class SmolAgentsRAG:
         if self._openai_client is None:
             self._openai_client = OpenAI()
         return self._openai_client
+
+    def configure(
+        self,
+        *,
+        mode: str,
+        scenario_name: str,
+        scenario_type: str,
+        scenario_config: dict[str, Any],
+        mode_config: dict[str, Any],
+    ) -> None:
+        """Configure retrieval strategy per benchmark mode."""
+        _ = (scenario_name, scenario_type)
+        self._mode = mode
+        top_k = int(mode_config.get("top_k", scenario_config.get("top_k", TOP_K)))
+        rounds_default = 1 if mode == "baseline" else 3
+        self._strategy = RetrievalStrategyConfig(
+            top_k=top_k,
+            retrieval_rounds=int(mode_config.get("retrieval_rounds", rounds_default)),
+            max_context_chunks=int(mode_config.get("max_context_chunks", top_k)),
+            max_followup_queries=int(mode_config.get("max_followup_queries", top_k)),
+        )
+
+    def _retrieve_once(self, query: str, top_k: int) -> RetrievalResult:
+        """Retrieve top-k chunks for a single query from active store."""
+        if self._embedding_store is not None:
+            return self._embedding_store.retrieve(query, top_k=top_k)
+
+        openai_client = self._ensure_openai()
+        embed_response = openai_client.embeddings.create(
+            model=EMBEDDING_MODEL,
+            input=query,
+        )
+        query_embedding = embed_response.data[0].embedding
+
+        results = self._collection.query(
+            query_embeddings=[query_embedding],
+            n_results=top_k,
+        )
+
+        context_chunks: list[str] = []
+        sources: list[str] = []
+        if results["documents"] and results["documents"][0]:
+            for doc_text, meta in zip(results["documents"][0], results["metadatas"][0]):
+                source = meta.get("source", "unknown")
+                context_chunks.append(f"[Source: {source}]\n{doc_text}")
+                if source not in sources:
+                    sources.append(source)
+
+        return RetrievalResult(chunks=context_chunks, sources=sources)
 
     async def ingest(self, documents: list[Document]) -> None:
         """Chunk documents, embed, and store in chromadb."""
@@ -124,33 +177,14 @@ class SmolAgentsRAG:
 
         start = time.perf_counter()
 
-        # Step 1: Retrieve
-        if self._embedding_store is not None:
-            retrieval = self._embedding_store.retrieve(question)
-            context_chunks = retrieval.chunks
-            sources = retrieval.sources
-        else:
-            openai_client = self._ensure_openai()
-            embed_response = openai_client.embeddings.create(
-                model=EMBEDDING_MODEL, input=question
-            )
-            query_embedding = embed_response.data[0].embedding
-
-            results = self._collection.query(
-                query_embeddings=[query_embedding],
-                n_results=TOP_K,
-            )
-
-            context_chunks = []
-            sources = []
-            if results["documents"] and results["documents"][0]:
-                for doc_text, meta in zip(
-                    results["documents"][0], results["metadatas"][0]
-                ):
-                    source = meta.get("source", "unknown")
-                    context_chunks.append(f"[Source: {source}]\n{doc_text}")
-                    if source not in sources:
-                        sources.append(source)
+        # Step 1: Retrieve (baseline single-pass, capability iterative)
+        retrieval_run = iterative_retrieve(
+            question=question,
+            retrieve_fn=self._retrieve_once,
+            config=self._strategy,
+        )
+        context_chunks = retrieval_run.retrieval.chunks
+        sources = retrieval_run.retrieval.sources
 
         context = "\n\n---\n\n".join(context_chunks)
         user_message = f"Context:\n{context}\n\nQuestion: {question}"
@@ -171,6 +205,10 @@ class SmolAgentsRAG:
                 question_id="",
                 text=gen_result["answer"],
                 sources_used=sources,
+                metadata={
+                    "mode": self._mode,
+                    "query_trace": retrieval_run.query_trace,
+                },
             ),
             usage=UsageStats(
                 prompt_tokens=input_tokens,

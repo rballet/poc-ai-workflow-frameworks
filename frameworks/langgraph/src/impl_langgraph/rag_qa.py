@@ -11,6 +11,7 @@ import operator
 import time
 import uuid
 from typing import Annotated
+from typing import Any
 
 import chromadb
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -20,7 +21,8 @@ from openai import OpenAI
 from typing_extensions import TypedDict
 
 from shared.interface import Answer, Document, RunResult, UsageStats
-from shared.retrieval import EmbeddingStore, chunk_text
+from shared.retrieval import EmbeddingStore, RetrievalResult, chunk_text
+from shared.retrieval_strategy import RetrievalStrategyConfig, iterative_retrieve
 
 MODEL = "gpt-4o-mini"
 EMBEDDING_MODEL = "text-embedding-3-small"
@@ -44,6 +46,7 @@ class RAGState(TypedDict):
     answer: str
     input_tokens: int
     output_tokens: int
+    query_trace: Annotated[list[str], operator.add]
 
 
 class LangGraphRAG:
@@ -68,6 +71,8 @@ class LangGraphRAG:
             self._openai_client = None
             self._collection = None
             self._collection_name = None
+        self._mode = "baseline"
+        self._strategy = RetrievalStrategyConfig()
 
     @property
     def name(self) -> str:
@@ -77,6 +82,52 @@ class LangGraphRAG:
         if self._openai_client is None:
             self._openai_client = OpenAI()
         return self._openai_client
+
+    def configure(
+        self,
+        *,
+        mode: str,
+        scenario_name: str,
+        scenario_type: str,
+        scenario_config: dict[str, Any],
+        mode_config: dict[str, Any],
+    ) -> None:
+        """Configure retrieval strategy per benchmark mode."""
+        _ = (scenario_name, scenario_type)
+        self._mode = mode
+        top_k = int(mode_config.get("top_k", scenario_config.get("top_k", TOP_K)))
+        rounds_default = 1 if mode == "baseline" else 3
+        self._strategy = RetrievalStrategyConfig(
+            top_k=top_k,
+            retrieval_rounds=int(mode_config.get("retrieval_rounds", rounds_default)),
+            max_context_chunks=int(mode_config.get("max_context_chunks", top_k)),
+            max_followup_queries=int(mode_config.get("max_followup_queries", top_k)),
+        )
+
+    def _retrieve_once(self, query: str, top_k: int) -> RetrievalResult:
+        """Retrieve top-k chunks for a single query from active store."""
+        if self._embedding_store is not None:
+            return self._embedding_store.retrieve(query, top_k=top_k)
+
+        openai_client = self._ensure_openai()
+        response = openai_client.embeddings.create(model=EMBEDDING_MODEL, input=query)
+        query_embedding = response.data[0].embedding
+
+        results = self._collection.query(
+            query_embeddings=[query_embedding],
+            n_results=top_k,
+        )
+
+        chunks: list[str] = []
+        sources: list[str] = []
+        if results["documents"] and results["documents"][0]:
+            for doc, meta in zip(results["documents"][0], results["metadatas"][0]):
+                source = meta.get("source", "unknown")
+                chunks.append(f"[Source: {source}]\n{doc}")
+                if source not in sources:
+                    sources.append(source)
+
+        return RetrievalResult(chunks=chunks, sources=sources)
 
     def _build_graph(self):
         """Build the LangGraph StateGraph with retrieve and generate nodes."""
@@ -88,38 +139,16 @@ class LangGraphRAG:
         async def retrieve(state: RAGState) -> dict:
             """Embed the question and retrieve top-k chunks."""
             question = state["question"]
-
-            if embedding_store is not None:
-                result = embedding_store.retrieve(question)
-                return {
-                    "context_chunks": result.chunks,
-                    "context_sources": result.sources,
-                }
-
-            response = openai_client.embeddings.create(
-                model=EMBEDDING_MODEL, input=question
+            _ = (embedding_store, collection, openai_client)
+            retrieval_run = iterative_retrieve(
+                question=question,
+                retrieve_fn=self._retrieve_once,
+                config=self._strategy,
             )
-            query_embedding = response.data[0].embedding
-
-            results = collection.query(
-                query_embeddings=[query_embedding],
-                n_results=TOP_K,
-            )
-
-            chunks = []
-            sources = []
-            if results["documents"] and results["documents"][0]:
-                for doc, meta in zip(
-                    results["documents"][0], results["metadatas"][0]
-                ):
-                    source = meta.get("source", "unknown")
-                    chunks.append(f"[Source: {source}]\n{doc}")
-                    if source not in sources:
-                        sources.append(source)
-
             return {
-                "context_chunks": chunks,
-                "context_sources": sources,
+                "context_chunks": retrieval_run.retrieval.chunks,
+                "context_sources": retrieval_run.retrieval.sources,
+                "query_trace": retrieval_run.query_trace,
             }
 
         async def generate(state: RAGState) -> dict:
@@ -203,6 +232,7 @@ class LangGraphRAG:
                 "answer": "",
                 "input_tokens": 0,
                 "output_tokens": 0,
+                "query_trace": [],
             }
         )
         elapsed = time.perf_counter() - start
@@ -215,6 +245,10 @@ class LangGraphRAG:
                 question_id="",
                 text=result["answer"],
                 sources_used=result.get("context_sources", []),
+                metadata={
+                    "mode": self._mode,
+                    "query_trace": result.get("query_trace", []),
+                },
             ),
             usage=UsageStats(
                 prompt_tokens=input_tokens,

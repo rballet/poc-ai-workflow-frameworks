@@ -10,3 +10,5 @@ Each subdirectory defines one benchmark scenario with:
 - Questions MUST have clear expected answers and identify expected source documents.
 - Scenarios are framework-agnostic — they define WHAT to test, not HOW.
 - Add new scenarios as subdirectories following the same structure.
+- Use `scenario_type`, `evaluation.profile`, and `modes.baseline/capability` in `spec.yaml` for extensibility.
+- Use per-question `metadata` for complex scenario metrics (e.g. required hops, tool expectations).

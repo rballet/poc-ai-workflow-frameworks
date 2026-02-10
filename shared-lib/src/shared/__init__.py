@@ -2,6 +2,7 @@
 
 from shared.interface import (
     Answer,
+    ConfigurableFramework,
     Document,
     Question,
     RAGFramework,
@@ -11,6 +12,7 @@ from shared.interface import (
 
 __all__ = [
     "Answer",
+    "ConfigurableFramework",
     "Document",
     "Question",
     "RAGFramework",

@@ -7,4 +7,5 @@ Modules:
     code_review: LLM-as-judge for implementation code quality.
     metrics: Token cost estimation.
     retrieval: Precision and recall.
+    profiles: Scenario-specific metric extensions (e.g. multi-hop chain coverage).
 """

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 
 @dataclass(frozen=True)
@@ -23,6 +23,7 @@ class Question:
     text: str
     expected_answer: str
     expected_sources: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -73,4 +74,21 @@ class RAGFramework(Protocol):
 
     async def cleanup(self) -> None:
         """Release resources (vector store, connections, etc.)."""
+        ...
+
+
+@runtime_checkable
+class ConfigurableFramework(Protocol):
+    """Optional protocol for frameworks that support runtime evaluation modes."""
+
+    def configure(
+        self,
+        *,
+        mode: str,
+        scenario_name: str,
+        scenario_type: str,
+        scenario_config: dict[str, Any],
+        mode_config: dict[str, Any],
+    ) -> None:
+        """Configure runtime strategy for the current benchmark run."""
         ...

@@ -26,6 +26,9 @@ uv run python scripts/run_eval.py --framework pydantic_ai --scenario rag_qa
 # Run all frameworks
 uv run python scripts/run_eval.py --all --scenario rag_qa
 
+# Run capability mode (iterative retrieval + scenario profile metrics)
+uv run python scripts/run_eval.py --all --scenario multihop_qa --mode capability
+
 # Run without LLM code review (faster, no extra API cost)
 uv run python scripts/run_eval.py --all --scenario rag_qa --skip-code-review
 
@@ -43,9 +46,12 @@ uv run python scripts/compare.py results/*.json -o results/comparison.md
 ├── shared-lib/              # Framework-agnostic interface and evaluation engine
 │   └── src/shared/
 │       ├── interface.py     # RAGFramework Protocol — the contract all frameworks implement
+│       ├── scenario.py      # Scenario loader + normalized scenario metadata
 │       ├── retrieval.py     # Shared embedding store with query caching
+│       ├── retrieval_strategy.py # Baseline/capability retrieval strategies
 │       └── eval/
 │           ├── harness.py      # Orchestrates ingest → query → judge → aggregate
+│           ├── profiles.py     # Scenario-specific quality metrics
 │           ├── llm_judge.py    # LLM-as-judge scoring (correctness, completeness, faithfulness)
 │           ├── code_quality.py # Static metrics via radon + ast
 │           ├── code_review.py  # LLM-as-judge code review (readability, extensibility, …)
@@ -83,27 +89,34 @@ class RAGFramework(Protocol):
     async def cleanup(self) -> None: ...
 ```
 
+Frameworks can optionally implement `ConfigurableFramework.configure(...)` to adapt behavior by scenario mode (`baseline` vs `capability`) without changing the base protocol.
+
 The evaluation harness feeds the same documents and questions to each implementation, then collects metrics through a shared pipeline. See [METRICS.md](METRICS.md) for details on what is measured and how.
 
 ## Design Principles
 
-- **Fair comparison** — all frameworks use the same model, temperature, prompt, chunking strategy, and retrieval method. A shared embedding store ensures identical retrieval results and avoids redundant API calls. Differences in results reflect the framework, not the configuration.
+- **Two-track evaluation** — run `baseline` mode for strict parity and `capability` mode for framework-tuned strategies under the same scenario budget.
+- **Fair baseline** — shared embedding store and aligned defaults keep baseline runs comparable.
+- **Extensible scenario profiles** — scenario-specific quality metrics are plug-ins (e.g., multi-hop chain/hop coverage).
 - **Framework-agnostic scenarios** — scenarios are defined as YAML + documents. Any framework that satisfies the Protocol can run them.
 - **Code quality analysis** — each framework's implementation is evaluated for complexity, maintainability, and coding standards via static analysis (radon) and LLM-as-judge code review.
-- **Extensible** — add a framework by implementing the Protocol; add a scenario by writing a spec + questions.
+- **Extensible** — add frameworks, scenario types, and profile metrics without changing the core harness.
 
 ## Adding a Framework
 
 1. Create `frameworks/<name>/` with a `pyproject.toml` depending on `shared`
 2. Implement a class satisfying `RAGFramework` in `src/impl_<name>/rag_qa.py`
-3. Register it in `scripts/run_eval.py` → `get_framework()`
-4. Add the workspace member to the root `pyproject.toml`
+3. Optionally implement `configure(...)` for mode-aware capability behavior
+4. Register it in `scripts/run_eval.py` → `get_framework()`
+5. Add the workspace member to the root `pyproject.toml`
 
 ## Adding a Scenario
 
 1. Create `scenarios/<name>/` with `spec.yaml`, `questions.yaml`, and a `documents/` folder
-2. Follow the structure of `scenarios/rag_qa/` as a template
-3. Reference the new scenario name with `--scenario <name>`
+2. Set `scenario_type`, `evaluation.profile`, and optional `modes.baseline/capability` in `spec.yaml`
+3. For complex tasks, add per-question `metadata` (e.g., required hops, tool expectations)
+4. Follow the structure of `scenarios/rag_qa/` as a template
+5. Reference the new scenario name with `--scenario <name>`
 
 ## Requirements
 

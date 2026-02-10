@@ -11,6 +11,7 @@ from shared.eval.metrics import compute_cost
 from shared.eval.retrieval import retrieval_precision, retrieval_recall
 from shared.eval.code_quality import StaticMetrics, compute_static_metrics
 from shared.eval.code_review import CodeReviewScores, review_code
+from shared.eval.profiles import ProfileContext, ScenarioProfile
 
 
 @dataclass
@@ -38,6 +39,8 @@ class QuestionEvaluation:
     # Retrieval (0-1)
     retrieval_precision: float
     retrieval_recall: float
+    # Scenario/profile specific metrics
+    extra_metrics: dict[str, float | int | bool] = field(default_factory=dict)
 
 
 @dataclass
@@ -56,6 +59,9 @@ class FrameworkEvaluation:
 
     framework_name: str
     scenario_name: str
+    scenario_type: str = "rag_qa"
+    evaluation_mode: str = "baseline"
+    evaluation_profile: str = "default"
     questions: list[QuestionEvaluation] = field(default_factory=list)
     # Aggregates
     avg_latency: float = 0.0
@@ -66,8 +72,23 @@ class FrameworkEvaluation:
     avg_faithfulness: float = 0.0
     avg_retrieval_precision: float = 0.0
     avg_retrieval_recall: float = 0.0
+    extra_aggregates: dict[str, float] = field(default_factory=dict)
     # Code quality (per-framework, not per-question)
     code_quality: CodeQualityEvaluation | None = None
+
+
+def _compute_extra_aggregates(
+    question_metrics: list[dict[str, float | int | bool]]
+) -> dict[str, float]:
+    """Compute mean value for all numeric per-question extra metrics."""
+    numeric: dict[str, list[float]] = {}
+    for metrics in question_metrics:
+        for key, value in metrics.items():
+            if isinstance(value, bool):
+                numeric.setdefault(key, []).append(float(value))
+            elif isinstance(value, (int, float)):
+                numeric.setdefault(key, []).append(float(value))
+    return {f"{k}_avg": sum(v) / len(v) for k, v in numeric.items() if v}
 
 
 def _compute_aggregates(evaluation: FrameworkEvaluation) -> None:
@@ -83,6 +104,9 @@ def _compute_aggregates(evaluation: FrameworkEvaluation) -> None:
     evaluation.avg_faithfulness = sum(q.faithfulness_score for q in evaluation.questions) / n
     evaluation.avg_retrieval_precision = sum(q.retrieval_precision for q in evaluation.questions) / n
     evaluation.avg_retrieval_recall = sum(q.retrieval_recall for q in evaluation.questions) / n
+    evaluation.extra_aggregates = _compute_extra_aggregates(
+        [q.extra_metrics for q in evaluation.questions]
+    )
 
 
 async def evaluate_framework(
@@ -90,7 +114,11 @@ async def evaluate_framework(
     documents: list[Document],
     questions: list[Question],
     scenario_name: str,
+    scenario_type: str = "rag_qa",
+    evaluation_mode: str = "baseline",
     judge_model: str = "gpt-4o-mini",
+    scenario_profile: ScenarioProfile | None = None,
+    profile_context: ProfileContext | None = None,
     source_path: str | None = None,
     framework_key: str | None = None,
     scenario_description: str = "",
@@ -113,9 +141,17 @@ async def evaluate_framework(
     # 1. Ingest documents (not part of per-question timing)
     await framework.ingest(documents)
 
+    if scenario_profile is None:
+        raise ValueError("scenario_profile must be provided")
+    if profile_context is None:
+        raise ValueError("profile_context must be provided")
+
     evaluation = FrameworkEvaluation(
         framework_name=framework.name,
         scenario_name=scenario_name,
+        scenario_type=scenario_type,
+        evaluation_mode=evaluation_mode,
+        evaluation_profile=profile_context.profile_key,
     )
 
     for question in questions:
@@ -147,6 +183,11 @@ async def evaluate_framework(
             retrieved=result.answer.sources_used,
             relevant=question.expected_sources,
         )
+        question_extra = scenario_profile.question_metrics(
+            question=question,
+            result=result,
+            context=profile_context,
+        )
 
         evaluation.questions.append(
             QuestionEvaluation(
@@ -168,11 +209,18 @@ async def evaluate_framework(
                 judge_reasoning=judge.reasoning,
                 retrieval_precision=r_precision,
                 retrieval_recall=r_recall,
+                extra_metrics=question_extra,
             )
         )
 
     # 6. Aggregates
     _compute_aggregates(evaluation)
+    evaluation.extra_aggregates.update(
+        scenario_profile.aggregate_metrics(
+            question_metrics=[q.extra_metrics for q in evaluation.questions],
+            context=profile_context,
+        )
+    )
 
     # 7. Code quality (per-framework, not per-question)
     if source_path is not None:

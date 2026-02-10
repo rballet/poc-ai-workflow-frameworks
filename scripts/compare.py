@@ -7,6 +7,7 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 
 def load_results(paths: list[str]) -> list[dict]:
@@ -35,6 +36,19 @@ def _fmt(val, fmt: str) -> str:
     return f"{val:{fmt}}"
 
 
+def _label_from_key(key: str) -> str:
+    """Convert snake_case metric names to readable labels."""
+    return key.replace("_", " ").title()
+
+
+def _numeric(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return float(value)
+    if isinstance(value, (int, float)):
+        return float(value)
+    return None
+
+
 def generate_comparison_report(results: list[dict]) -> str:
     """Generate a markdown comparison report from multiple framework results."""
     lines: list[str] = []
@@ -45,6 +59,9 @@ def generate_comparison_report(results: list[dict]) -> str:
     lines.append(f"Generated: {timestamp}")
     if results:
         lines.append(f"Scenario: {results[0].get('scenario_name', 'unknown')}")
+        lines.append(f"Scenario Type: {results[0].get('scenario_type', 'unknown')}")
+        lines.append(f"Mode: {results[0].get('evaluation_mode', 'baseline')}")
+        lines.append(f"Profile: {results[0].get('evaluation_profile', 'default')}")
         n_questions = len(results[0].get("questions", []))
         lines.append(f"Questions: {n_questions}")
     lines.append("")
@@ -81,6 +98,32 @@ def generate_comparison_report(results: list[dict]) -> str:
         lines.append("| " + " | ".join(row) + " |")
 
     lines.append("")
+
+    # --- Extra aggregate metrics ---
+    extra_keys: set[str] = set()
+    for r in results:
+        extra = r.get("extra_aggregates") or {}
+        extra_keys.update(k for k, v in extra.items() if _numeric(v) is not None)
+
+    if extra_keys:
+        lines.append("## Scenario-Specific Metrics")
+        lines.append("")
+        headers = ["Metric"] + [r["framework_name"] for r in results]
+        lines.append("| " + " | ".join(headers) + " |")
+        lines.append("| " + " | ".join(["---"] * len(headers)) + " |")
+        for key in sorted(extra_keys):
+            row = [_label_from_key(key)]
+            for r in results:
+                value = (r.get("extra_aggregates") or {}).get(key)
+                numeric_value = _numeric(value)
+                if numeric_value is None:
+                    row.append("N/A")
+                elif abs(numeric_value - int(numeric_value)) < 1e-9:
+                    row.append(str(int(numeric_value)))
+                else:
+                    row.append(f"{numeric_value:.3f}")
+            lines.append("| " + " | ".join(row) + " |")
+        lines.append("")
 
     # --- Code Quality: Static Metrics ---
     has_code_quality = any(r.get("code_quality") for r in results)
@@ -186,16 +229,35 @@ def generate_comparison_report(results: list[dict]) -> str:
                 ("Retrieval Recall", "retrieval_recall", ".2f"),
             ]
 
+            extra_q_keys: set[str] = set()
+            for r in results:
+                r_questions = r.get("questions", [])
+                if i < len(r_questions):
+                    extra_metrics = r_questions[i].get("extra_metrics") or {}
+                    extra_q_keys.update(k for k, v in extra_metrics.items() if _numeric(v) is not None)
+            for key in sorted(extra_q_keys):
+                q_metrics.append((_label_from_key(key), f"extra_metrics.{key}", ".3f"))
+
             for label, key, fmt in q_metrics:
                 row = [label]
                 for r in results:
                     r_questions = r.get("questions", [])
                     if i < len(r_questions):
-                        val = r_questions[i].get(key, 0)
-                        if fmt == ",d":
-                            row.append(f"{int(val):,}")
+                        if key.startswith("extra_metrics."):
+                            extra_key = key.split(".", 1)[1]
+                            val = (r_questions[i].get("extra_metrics") or {}).get(extra_key, None)
                         else:
-                            row.append(f"{val:{fmt}}")
+                            val = r_questions[i].get(key, 0)
+                        numeric_val = _numeric(val)
+                        if numeric_val is None:
+                            row.append("N/A")
+                            continue
+                        if fmt == ",d":
+                            row.append(f"{int(numeric_val):,}")
+                        elif fmt == ".3f" and abs(numeric_val - int(numeric_val)) < 1e-9:
+                            row.append(str(int(numeric_val)))
+                        else:
+                            row.append(f"{numeric_val:{fmt}}")
                     else:
                         row.append("N/A")
                 lines.append("| " + " | ".join(row) + " |")
