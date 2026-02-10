@@ -237,8 +237,8 @@ class SmolAgentsRAG:
         """Answer question via baseline single-pass or native tool-driven capability mode."""
         start = time.perf_counter()
 
+        model = LiteLLMModel(model_id=self._model_id, temperature=0)
         if self._mode == "baseline":
-            model = LiteLLMModel(model_id=self._model_id, temperature=0)
             retrieval = self._retrieve_once(question, self._top_k)
             context = "\n\n---\n\n".join(retrieval.chunks[: self._max_context_chunks])
             user_message = f"Context:\n{context}\n\nQuestion: {question}"
@@ -265,7 +265,6 @@ class SmolAgentsRAG:
                 ),
             )
 
-        model = LiteLLMModel(model_id=self._model_id, temperature=0)
         retriever_tool = RetrieverTool(
             retrieve_fn=self._retrieve_once,
             top_k=self._top_k,
