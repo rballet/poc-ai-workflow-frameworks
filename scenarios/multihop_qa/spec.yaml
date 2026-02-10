@@ -15,10 +15,15 @@ evaluation:
 modes:
   baseline:
     top_k: 3
+    max_steps: 1
     retrieval_rounds: 1
     max_context_chunks: 3
   capability:
     top_k: 3
+    max_steps: 4
     retrieval_rounds: 3
     max_context_chunks: 8
     max_followup_queries: 4
+    max_plan_queries: 3
+    max_validation_queries: 2
+    max_retrieval_calls: 4

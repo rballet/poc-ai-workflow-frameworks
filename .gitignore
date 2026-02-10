@@ -1,6 +1,5 @@
 # Benchmark results (keep .gitkeep)
 results/*.json
-results/*.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
