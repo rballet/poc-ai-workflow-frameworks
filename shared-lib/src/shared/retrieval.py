@@ -77,11 +77,6 @@ class EmbeddingStore:
             self._openai_client = OpenAI()
         return self._openai_client
 
-    @property
-    def is_ingested(self) -> bool:
-        """Whether documents have been ingested."""
-        return self._ingested
-
     def ingest(self, documents: list[Document]) -> None:
         """Chunk and embed all documents.  Idempotent — only embeds once."""
         if self._ingested:

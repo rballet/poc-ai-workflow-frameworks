@@ -20,13 +20,16 @@ sys.path.insert(0, str(ROOT / "shared-lib" / "src"))
 for _framework in ("langgraph", "pydantic_ai", "smolagents"):
     sys.path.insert(0, str(ROOT / "frameworks" / _framework / "src"))
 
-from shared.eval.harness import FrameworkEvaluation, evaluate_framework
-from shared.eval.profiles import ProfileContext, get_scenario_profile
-from shared.interface import ConfigurableFramework
-from shared.retrieval import EmbeddingStore
-from shared.scenario import ScenarioDefinition, load_scenario as load_scenario_definition
+from shared.eval.harness import FrameworkEvaluation, evaluate_framework  # noqa: E402
+from shared.eval.profiles import ProfileContext, get_scenario_profile  # noqa: E402
+from shared.interface import ConfigurableFramework  # noqa: E402
+from shared.retrieval import EmbeddingStore  # noqa: E402
+from shared.scenario import (  # noqa: E402
+    ScenarioDefinition,
+    load_scenario as load_scenario_definition,
+)
 
-from compare import generate_comparison_report
+from compare import generate_comparison_report  # noqa: E402
 
 SCENARIOS_DIR = ROOT / "scenarios"
 RESULTS_DIR = ROOT / "results"
@@ -203,7 +206,7 @@ async def run_single(
     if evaluation.code_quality is not None:
         cq = evaluation.code_quality
         sm = cq.static_metrics
-        print(f"\n  Code Quality (static):")
+        print("\n  Code Quality (static):")
         print(f"    SLOC:                {sm.sloc}")
         print(f"    Avg CC:              {sm.avg_cyclomatic_complexity:.1f} ({sm.complexity_grade})")
         print(f"    Maintainability:     {sm.maintainability_index:.1f} ({sm.maintainability_grade})")
@@ -212,7 +215,7 @@ async def run_single(
         print(f"    Type Annotations:    {sm.type_annotation_ratio:.0%}")
         if cq.code_review is not None:
             cr = cq.code_review
-            print(f"  Code Quality (LLM review):")
+            print("  Code Quality (LLM review):")
             print(f"    Avg Score:           {cr.avg_score:.1f}/5")
             print(f"    Readability:         {cr.readability}/5")
             print(f"    Idiomatic Usage:     {cr.idiomatic_usage}/5")
