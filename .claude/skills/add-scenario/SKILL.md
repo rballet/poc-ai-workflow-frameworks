@@ -32,7 +32,7 @@ Use when the user wants to add a new benchmark scenario.
    questions_file: questions.yaml
    config:
      embedding_model: text-embedding-3-small
-     llm_model: gpt-4o-mini
+     llm_model: gpt-5-mini
      chunk_size: 500
      chunk_overlap: 50
      top_k: 3

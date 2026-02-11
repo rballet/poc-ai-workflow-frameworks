@@ -10,8 +10,8 @@ Current scenarios: RAG Q&A, Multi-hop Q&A, Agentic SQL QA
 - Python >= 3.12, package manager: uv (workspace mode)
 - Vector store: chromadb (in-memory)
 - Embeddings: OpenAI text-embedding-3-small
-- LLM: gpt-4o-mini (default)
-- Evaluation: custom harness with LLM-as-judge (gpt-4o-mini)
+- LLM: gpt-5-mini (default)
+- Evaluation: custom harness with LLM-as-judge (gpt-5-mini)
 
 ## Project Structure
 - `shared-lib/` — Core interfaces, eval harness, reporting (Python package name: `shared`)

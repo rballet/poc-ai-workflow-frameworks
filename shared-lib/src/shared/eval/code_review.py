@@ -71,7 +71,7 @@ async def review_code(
     source_code: str,
     framework_name: str,
     scenario_description: str,
-    model: str = "gpt-4o-mini",
+    model: str = "gpt-5-mini",
 ) -> CodeReviewScores:
     """Use an LLM to review implementation code quality."""
     client = AsyncOpenAI()

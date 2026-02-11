@@ -18,7 +18,7 @@ from typing_extensions import TypedDict
 from shared.interface import Answer, Document, RunResult, UsageStats
 from shared.retrieval import EmbeddingStore, RetrievalResult, chunk_text
 
-MODEL = "gpt-4o-mini"
+MODEL = "gpt-5-mini"
 EMBEDDING_MODEL = "text-embedding-3-small"
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50

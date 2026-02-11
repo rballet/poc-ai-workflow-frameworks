@@ -16,7 +16,7 @@ Each framework runs the same set of questions against the same documents. Per-qu
 | **Total tokens** | count | Prompt + completion |
 | **Estimated cost** | USD | Computed from token counts using a per-model pricing table |
 
-Cost estimation normalizes model name variants (e.g. `openai/gpt-4o-mini` and `gpt-4o-mini` resolve to the same pricing). Unknown models report $0.
+Cost estimation normalizes model name variants (e.g. `openai/gpt-5-mini` and `gpt-5-mini` resolve to the same pricing). Unknown models report $0.
 
 ### Timeout Guardrail
 
@@ -27,7 +27,7 @@ Each question run is protected by a configurable timeout (`--query-timeout-secon
 
 ## Answer Quality — LLM-as-Judge
 
-An independent LLM (default: `gpt-4o-mini`) scores each answer on three criteria. It receives the question, expected answer, actual answer, and retrieved sources.
+An independent LLM (default: `gpt-5-mini`) scores each answer on three criteria. It receives the question, expected answer, actual answer, and retrieved sources.
 
 | Criterion | Scale | What it measures |
 |---|---|---|
@@ -93,7 +93,7 @@ Powered by [radon](https://radon.readthedocs.io/) and Python's `ast` module.
 
 ## Code Quality — LLM Code Review
 
-An independent LLM (default: `gpt-4o-mini`) reviews each framework's source code and scores it on seven criteria. It receives the framework name, scenario description, and full source code.
+An independent LLM (default: `gpt-5-mini`) reviews each framework's source code and scores it on seven criteria. It receives the framework name, scenario description, and full source code.
 
 | Criterion | Scale | What it measures |
 |---|---|---|
@@ -136,7 +136,7 @@ To ensure a fair comparison, all frameworks share:
 
 | Parameter | Value | Set in |
 |---|---|---|
-| LLM model | `gpt-4o-mini` | `scenarios/rag_qa/spec.yaml` |
+| LLM model | `gpt-5-mini` | `scenarios/rag_qa/spec.yaml` |
 | Embedding model | `text-embedding-3-small` | `scenarios/rag_qa/spec.yaml` |
 | Temperature | `0` | Each framework implementation |
 | System prompt | Identical across all three | Each framework implementation |

@@ -17,6 +17,6 @@ Uses a `CodeAgent` with a custom `RetrieverTool`:
 
 ## Notes
 - smolagents is **sync-only** — uses `asyncio.to_thread()` to bridge to async
-- Model ID format: `"openai/gpt-4o-mini"` (LiteLLM convention)
+- Model ID format: `"openai/gpt-5-mini"` (LiteLLM convention)
 - Agent recreated per query (stateless design)
 - `verbosity_level=0` to suppress console output during benchmarks

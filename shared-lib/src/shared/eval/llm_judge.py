@@ -45,7 +45,7 @@ async def judge_answer(
     expected: str,
     actual: str,
     context_sources: list[str],
-    model: str = "gpt-4o-mini",
+    model: str = "gpt-5-mini",
 ) -> JudgeResult:
     """Use an LLM to judge answer quality."""
     client = AsyncOpenAI()

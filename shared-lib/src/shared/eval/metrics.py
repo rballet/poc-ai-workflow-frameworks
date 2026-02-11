@@ -12,7 +12,7 @@ COST_PER_1K_TOKENS: dict[str, dict[str, float]] = {
 
 
 def _normalize_model_name(model_name: str) -> str:
-    """Strip provider prefixes (e.g. 'openai/gpt-4o-mini' -> 'gpt-4o-mini').
+    """Strip provider prefixes (e.g. 'openai/gpt-5-mini' -> 'gpt-5-mini').
 
     Frameworks like smolagents (via LiteLLM) report model names with a
     provider prefix.  We normalise so the cost lookup table works regardless

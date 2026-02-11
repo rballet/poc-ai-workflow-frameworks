@@ -15,7 +15,7 @@ Core interfaces and evaluation harness used by all framework implementations.
 - This package MUST NOT depend on any framework-specific packages.
 - Keep the Protocol minimal — only what is needed for evaluation.
 - All quality scores use 1.0-5.0 (judge) or 0.0-1.0 (retrieval).
-- The judge model defaults to `gpt-4o-mini` for cost reasons.
+- The judge model defaults to `gpt-5-mini` for cost reasons.
 - Keep scenario/profile plugins modular so new scenario types can be added without changing core harness logic.
 
 ## Build

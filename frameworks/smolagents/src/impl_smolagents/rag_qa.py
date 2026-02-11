@@ -21,7 +21,7 @@ from smolagents import LiteLLMModel
 from shared.interface import Answer, Document, RunResult, UsageStats
 from shared.retrieval import EmbeddingStore, RetrievalResult, chunk_text
 
-MODEL_ID = "openai/gpt-4o-mini"
+MODEL_ID = "openai/gpt-5-mini"
 EMBEDDING_MODEL = "text-embedding-3-small"
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50

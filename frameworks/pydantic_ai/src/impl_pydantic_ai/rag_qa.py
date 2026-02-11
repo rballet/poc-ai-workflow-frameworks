@@ -19,7 +19,7 @@ from pydantic_ai import Agent
 from shared.interface import Answer, Document, RunResult, UsageStats
 from shared.retrieval import EmbeddingStore, RetrievalResult, chunk_text
 
-MODEL = "openai:gpt-4o-mini"
+MODEL = "openai:gpt-5-mini"
 EMBEDDING_MODEL = "text-embedding-3-small"
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
@@ -187,7 +187,7 @@ class PydanticAIRAG:
                 completion_tokens=usage.output_tokens or 0,
                 total_tokens=usage.total_tokens or 0,
                 latency_seconds=elapsed,
-                model_name="gpt-4o-mini",
+                model_name=self._model,
             ),
         )
 

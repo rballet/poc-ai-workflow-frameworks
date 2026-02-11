@@ -250,7 +250,7 @@ async def main():
             "capability=scenario-specific framework extensions."
         ),
     )
-    parser.add_argument("--judge-model", default="gpt-4o-mini", help="Model for LLM judge")
+    parser.add_argument("--judge-model", default="gpt-5-mini", help="Model for LLM judge")
     parser.add_argument(
         "--query-timeout-seconds",
         type=float,

@@ -117,7 +117,7 @@ async def evaluate_framework(
     scenario_name: str,
     scenario_type: str = "rag_qa",
     evaluation_mode: str = "baseline",
-    judge_model: str = "gpt-4o-mini",
+    judge_model: str = "gpt-5-mini",
     scenario_profile: ScenarioProfile | None = None,
     profile_context: ProfileContext | None = None,
     source_path: str | None = None,

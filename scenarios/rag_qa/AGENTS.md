@@ -12,6 +12,6 @@ Simple Retrieval-Augmented Generation question answering over small technical do
 
 ## Configuration (spec.yaml)
 - Embedding: `text-embedding-3-small`
-- LLM: `gpt-4o-mini`
+- LLM: `gpt-5-mini`
 - Chunk size: 500 chars, 50 overlap
 - Top-K retrieval: 3 chunks

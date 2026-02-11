@@ -17,5 +17,5 @@ Uses a Pydantic AI `Agent` with a `@agent.tool` for retrieval:
 
 ## Notes
 - Agent initialization deferred to first use (`_ensure_agent()`)
-- Model specified as `"openai:gpt-4o-mini"` (Pydantic AI format)
+- Model specified as `"openai:gpt-5-mini"` (Pydantic AI format)
 - Token fields: `input_tokens`/`output_tokens` (not `prompt_tokens`/`completion_tokens`)
