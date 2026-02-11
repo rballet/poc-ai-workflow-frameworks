@@ -7,6 +7,7 @@ This file summarizes the latest benchmark findings and links to the detailed rep
 - Multi-hop baseline: [`results/comparison_multihop_qa_baseline.md`](results/comparison_multihop_qa_baseline.md)
 - Multi-hop capability: [`results/comparison_multihop_qa_capability.md`](results/comparison_multihop_qa_capability.md)
 - RAG baseline: [`results/comparison_rag_qa_baseline.md`](results/comparison_rag_qa_baseline.md)
+- Agentic SQL baseline: [`results/comparison_agentic_sql_qa_baseline.md`](results/comparison_agentic_sql_qa_baseline.md)
 - Agentic SQL capability: [`results/comparison_agentic_sql_qa_capability.md`](results/comparison_agentic_sql_qa_capability.md)
 - Metric definitions: [`METRICS.md`](METRICS.md)
 

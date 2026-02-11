@@ -132,17 +132,27 @@ These are decision aids and should not replace direct inspection of raw quality,
 
 ## Controlling Variables
 
-To ensure a fair comparison, all frameworks share:
+To ensure a fair comparison, all frameworks share core parameters per scenario. Values are set in each scenario's `spec.yaml`.
+
+### Shared across all scenarios
 
 | Parameter | Value | Set in |
 |---|---|---|
-| LLM model | `gpt-5-mini` | `scenarios/rag_qa/spec.yaml` |
-| Embedding model | `text-embedding-3-small` | `scenarios/rag_qa/spec.yaml` |
+| LLM model | `gpt-5-mini` | Each `spec.yaml` |
+| Embedding model | `text-embedding-3-small` | Each `spec.yaml` |
 | Temperature | `0` | Each framework implementation |
 | System prompt | Identical across all three | Each framework implementation |
-| Chunk size | 500 chars | `scenarios/rag_qa/spec.yaml` |
-| Chunk overlap | 50 chars | `scenarios/rag_qa/spec.yaml` |
-| Top-k retrieval | 3 | `scenarios/rag_qa/spec.yaml` |
+| Chunk size | 500 chars | Each `spec.yaml` |
+| Chunk overlap | 50 chars | Each `spec.yaml` |
+
+### Scenario-specific parameters
+
+| Parameter | RAG QA | Multi-hop QA | Agentic SQL QA |
+|---|---|---|---|
+| Top-k retrieval | 3 | 3 | 4 |
+| Database seed file | — | — | `data/seed.sql` |
+| Capability max_steps | — | 4 | 10 |
+| Capability max_tool_calls | — | — | 10 |
 
 ## Output Format
 

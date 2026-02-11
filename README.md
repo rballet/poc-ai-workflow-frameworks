@@ -54,6 +54,7 @@ uv run python scripts/compare.py results/*.json -o results/comparison.md
 │       ├── interface.py     # RAGFramework Protocol — the contract all frameworks implement
 │       ├── scenario.py      # Scenario loader + normalized scenario metadata
 │       ├── retrieval.py     # Shared embedding store with query caching
+│       ├── agentic_sql.py   # Shared runtime for agentic SQL scenarios (tools, safety, tracing)
 │       └── eval/
 │           ├── harness.py      # Orchestrates ingest → query → judge → aggregate
 │           ├── profiles.py     # Scenario-specific quality metrics
@@ -77,7 +78,8 @@ uv run python scripts/compare.py results/*.json -o results/comparison.md
 │   ├── run_eval.py          # CLI to run benchmarks
 │   └── compare.py           # CLI to generate comparison reports
 │
-└── results/                 # Output JSON + markdown reports (git-ignored)
+├── results/                 # Output JSON (git-ignored) + markdown reports
+└── RESULTS_SUMMARY.md       # Latest benchmark findings and interpretation
 ```
 
 ## How It Works
@@ -125,6 +127,10 @@ The comparison report also includes:
 3. For complex tasks, add per-question `metadata` (e.g., required hops, tool expectations)
 4. Follow the structure of `scenarios/rag_qa/` as a template
 5. Reference the new scenario name with `--scenario <name>`
+
+## Results
+
+See [RESULTS_SUMMARY.md](RESULTS_SUMMARY.md) for latest benchmark findings across all scenarios. Detailed per-run comparison reports are in `results/`.
 
 ## Requirements
 
