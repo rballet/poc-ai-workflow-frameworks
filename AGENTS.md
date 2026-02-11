@@ -4,7 +4,7 @@
 Benchmarks AI agent/workflow frameworks on identical scenarios to compare latency, cost, quality, and developer experience.
 
 Frameworks: LangGraph 1.0.8, Pydantic AI 1.56.0, smolagents 1.24.0
-Current scenarios: RAG Q&A, Multi-hop Q&A, Agentic SQL QA
+Current scenarios: RAG Q&A, Multi-hop Q&A, Agentic SQL QA, Multi-Agent Coordination
 
 ## Tech Stack
 - Python >= 3.12, package manager: uv (workspace mode)

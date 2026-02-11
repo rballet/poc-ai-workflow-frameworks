@@ -147,12 +147,12 @@ To ensure a fair comparison, all frameworks share core parameters per scenario. 
 
 ### Scenario-specific parameters
 
-| Parameter | RAG QA | Multi-hop QA | Agentic SQL QA |
-|---|---|---|---|
-| Top-k retrieval | 3 | 3 | 4 |
-| Database seed file | — | — | `data/seed.sql` |
-| Capability max_steps | — | 4 | 10 |
-| Capability max_tool_calls | — | — | 10 |
+| Parameter | RAG QA | Multi-hop QA | Agentic SQL QA | Multi-Agent Coordination |
+|---|---|---|---|---|
+| Top-k retrieval | 3 | 3 | 4 | 4 |
+| Database seed file | — | — | `data/seed.sql` | `data/seed.sql` |
+| Capability max_steps | — | 4 | 10 | 15 |
+| Capability max_tool_calls | — | — | 10 | 15 |
 
 ## Output Format
 
@@ -177,3 +177,8 @@ Scenario profiles can add extra metrics via `shared.eval.profiles`:
   - grounded hop coverage on branching questions
   - tool coverage against expected tools (when tool traces are reported)
   - tool trace reporting rate
+- `multi_agent_coordination`: separates easy vs coordination questions and tracks:
+  - agent coverage (did the framework invoke the required specialist domains?)
+  - coordination success rate (agent coverage + hop coverage threshold)
+  - hop coverage and grounded hop coverage on coordination questions
+  - tool coverage and tool trace reporting rate

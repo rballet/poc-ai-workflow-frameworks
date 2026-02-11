@@ -1,0 +1,352 @@
+questions:
+  - id: q1
+    text: "What services run on the prod-us-east-1 cluster and what are their tiers?"
+    expected_answer: |
+      Four services run on prod-us-east-1 (CL-001):
+      - api-gateway: critical tier
+      - auth-service: critical tier
+      - payment-service: critical tier
+      - user-profile: standard tier
+    expected_sources:
+      - services
+    metadata:
+      difficulty: easy
+      required_agents:
+        - infrastructure
+      required_tools:
+        - query_infrastructure
+      coordination_points: 0
+      required_hops:
+        - id: services_list
+          any_of: ["api-gateway", "auth-service", "payment-service", "user-profile"]
+          source: services
+
+  - id: q2
+    text: "Are there any open critical vulnerabilities? List them with their remediation deadlines."
+    expected_answer: |
+      Yes, one open critical vulnerability:
+      - SCAN-201: CVE-2025-31337 on order-service (SVC-004). Remote code execution in container base image.
+        Status: open. Remediation deadline: 2026-02-09T06:00:00Z (already past).
+    expected_sources:
+      - vulnerability_scans
+    metadata:
+      difficulty: easy
+      required_agents:
+        - security
+      required_tools:
+        - query_security
+      coordination_points: 0
+      required_hops:
+        - id: critical_vuln
+          any_of: ["CVE-2025-31337", "SCAN-201", "order-service"]
+          source: vulnerability_scans
+
+  - id: q3
+    text: "What are the escalation triggers for promoting a sev2 incident to sev1?"
+    expected_answer: |
+      A Sev2 must be escalated to Sev1 if ANY of these are true:
+      1. Cascading impact -- the affected service has downstream dependents also degraded
+      2. Incident in "investigating" status for more than 60 minutes without identification
+      3. Anomalous access patterns suggesting active exploitation (anomaly_score > 0.7)
+      4. Explicit compliance or legal trigger (e.g., GDPR data exposure in EU region)
+    expected_sources:
+      - incident_response_runbook.md
+    metadata:
+      difficulty: easy
+      required_agents:
+        - runbook
+      required_tools:
+        - lookup_runbook
+      coordination_points: 0
+      required_hops:
+        - id: escalation_triggers
+          any_of: ["cascading impact", "60 minutes", "anomaly_score", "0.7", "compliance", "legal"]
+          source: incident_response_runbook.md
+
+  - id: q4
+    text: "Was the most recent deploy of auth-service compliant with the change management policy?"
+    expected_answer: |
+      No, the auth-service deploy (DEP-102, image auth:v2.4.1-rc3) violated the change management policy in two ways:
+      1. Deployed on Friday 2026-02-10 at 16:30 UTC -- this is during the Friday freeze window (after 14:00 UTC)
+      2. No change ticket was filed (change_ticket is NULL) -- all production deploys require a change ticket
+      Additionally, auth-service is a critical tier service requiring 2 approvers, making the missing ticket even more significant.
+    expected_sources:
+      - recent_deploys
+      - change_management_policy.md
+    metadata:
+      difficulty: coordination
+      required_agents:
+        - infrastructure
+        - runbook
+      required_tools:
+        - query_infrastructure
+        - lookup_runbook
+      coordination_points: 2
+      required_hops:
+        - id: deploy_timing
+          any_of: ["16:30", "friday", "freeze"]
+          source: recent_deploys
+        - id: missing_ticket
+          any_of: ["no change ticket", "NULL", "no ticket", "missing ticket"]
+          source: recent_deploys
+        - id: policy_violation
+          any_of: ["policy violation", "not compliant", "violated", "non-compliant"]
+          source: change_management_policy.md
+
+  - id: q5
+    text: "Was the firewall rule change FW-404 on prod-eu-west-1 properly authorized?"
+    expected_answer: |
+      No, FW-404 was not properly authorized. It violates the security compliance policy:
+      1. Modified by bot-scanner@security-automation, but the rule opens port 8083 to an external CIDR (198.51.100.0/24), which is NOT a pre-approved template action
+      2. Pre-approved templates are limited to blocking malicious IPs and rate-limiting -- opening ports to external CIDRs requires manual approval
+      3. No change ticket is associated with this firewall change (the firewall_rules table has no ticket field and no corresponding CHG entry)
+    expected_sources:
+      - firewall_rules
+      - security_compliance_policy.md
+    metadata:
+      difficulty: coordination
+      required_agents:
+        - security
+        - runbook
+      required_tools:
+        - query_security
+        - lookup_runbook
+      coordination_points: 2
+      required_hops:
+        - id: rule_details
+          any_of: ["bot-scanner", "198.51.100.0/24", "8083", "security-automation"]
+          source: firewall_rules
+        - id: not_preapproved
+          any_of: ["not pre-approved", "not a pre-approved template", "requires manual approval", "compliance violation"]
+          source: security_compliance_policy.md
+
+  - id: q6
+    text: "Which services have both open critical or high vulnerabilities and recent deploys without change tickets?"
+    expected_answer: |
+      No single service has both conditions simultaneously. Looking at each:
+      - order-service (SVC-004) has an open critical vulnerability (CVE-2025-31337) but its recent deploy (DEP-104) HAS a change ticket (CHG-5495)
+      - auth-service (SVC-002) has a recent deploy WITHOUT a change ticket (DEP-102, change_ticket is NULL) but its vulnerability (CVE-2025-28100, medium) is already mitigated
+      - payment-service (SVC-003) has an open high vulnerability (CVE-2025-29555) and its deploy (DEP-103) HAS a change ticket (CHG-5480)
+      So no service currently meets both criteria.
+    expected_sources:
+      - vulnerability_scans
+      - recent_deploys
+    metadata:
+      difficulty: coordination
+      required_agents:
+        - infrastructure
+        - security
+      required_tools:
+        - query_infrastructure
+        - query_security
+      coordination_points: 2
+      required_hops:
+        - id: vuln_check
+          any_of: ["CVE-2025-31337", "order-service", "SCAN-201"]
+          source: vulnerability_scans
+        - id: deploy_check
+          any_of: ["no change ticket", "NULL", "DEP-102", "auth-service"]
+          source: recent_deploys
+        - id: no_overlap
+          any_of: ["no single service", "no service", "none", "not simultaneously", "no overlap"]
+          source: vulnerability_scans
+
+  - id: q7
+    text: "What is the likely root cause of INC-4001, and was proper incident response followed?"
+    expected_answer: |
+      Root cause: The auth-service deploy (v2.4.1-rc3, DEP-102) at 16:30 UTC introduced a latency regression (p99 latency 8200ms vs baseline 120ms). Since payment-service depends on auth-service synchronously, the auth-service latency caused payment-service to return 503 errors.
+
+      Incident response assessment:
+      - Commander assigned within 3 minutes (opened 17:15, commander at 17:18) -- COMPLIANT with 5-minute SLA
+      - Identity team (auth-service owners) were NOT paged until 18:00 -- 45 minute delay. Per Sev1 runbook, ALL affected service owners must be paged immediately -- NON-COMPLIANT
+      - The deploy itself violated change management policy: no change ticket, deployed during Friday freeze window
+
+      Rollback was initiated at 18:00 (confirmed by timeline entry TL-004).
+    expected_sources:
+      - incidents
+      - incident_timeline
+      - dependencies
+      - recent_deploys
+      - incident_response_runbook.md
+      - change_management_policy.md
+    metadata:
+      difficulty: hard_coordination
+      required_agents:
+        - infrastructure
+        - security
+        - runbook
+      required_tools:
+        - query_infrastructure
+        - query_security
+        - lookup_runbook
+      coordination_points: 4
+      required_hops:
+        - id: root_cause_deploy
+          any_of: ["v2.4.1-rc3", "auth-service deploy", "latency regression"]
+          source: recent_deploys
+        - id: dependency_chain
+          any_of: ["payment-service depends on auth-service", "sync dependency", "upstream"]
+          source: dependencies
+        - id: paging_delay
+          any_of: ["45 minute", "not paged", "delay", "Identity team"]
+          source: incident_timeline
+        - id: change_violation
+          any_of: ["no change ticket", "Friday freeze", "policy violation"]
+          source: change_management_policy.md
+
+  - id: q8
+    text: "Provide a full incident analysis for INC-4002: root cause, security posture assessment, and compliance violations."
+    expected_answer: |
+      INC-4002: order-service degraded performance in eu-west-1
+
+      Root cause chain:
+      1. Firewall rule FW-404 was modified at 12:00 UTC by bot-scanner@security-automation, opening port 8083 to 198.51.100.0/24
+      2. Anomalous traffic from 198.51.100.x hit order-service starting at 14:05, with anomaly scores 0.85-0.95
+      3. This traffic pattern caused order-service p95 latency to spike to 4500ms
+
+      Security posture:
+      - CVE-2025-31337 (critical, remote code execution) is OPEN on order-service and PAST its remediation deadline (was 2026-02-09)
+      - The exposed port combined with an unpatched RCE vulnerability creates significant risk
+      - Access logs show multiple high-anomaly requests, suggesting possible exploitation attempts
+
+      Compliance violations:
+      1. Firewall change by bot-scanner was NOT a pre-approved template action (opened external port, not just blocking/rate-limiting)
+      2. No change ticket for the firewall modification
+      3. Critical CVE past remediation deadline (24-hour SLA violated)
+      4. EU region (eu-west-1) GDPR implications: order-service handles customer PII, potential data exposure must be reported to DPO within 24 hours
+    expected_sources:
+      - incidents
+      - incident_timeline
+      - firewall_rules
+      - vulnerability_scans
+      - access_logs
+      - security_compliance_policy.md
+      - change_management_policy.md
+    metadata:
+      difficulty: hard_coordination
+      required_agents:
+        - infrastructure
+        - security
+        - runbook
+      required_tools:
+        - query_infrastructure
+        - query_security
+        - lookup_runbook
+      coordination_points: 5
+      required_hops:
+        - id: firewall_change
+          any_of: ["FW-404", "bot-scanner", "port 8083", "198.51.100"]
+          source: firewall_rules
+        - id: anomalous_traffic
+          any_of: ["anomaly", "0.85", "0.91", "0.95", "198.51.100.42"]
+          source: access_logs
+        - id: open_cve
+          any_of: ["CVE-2025-31337", "remote code execution", "past deadline", "overdue"]
+          source: vulnerability_scans
+        - id: compliance_violation
+          any_of: ["not pre-approved", "compliance violation", "no change ticket"]
+          source: security_compliance_policy.md
+        - id: gdpr
+          any_of: ["GDPR", "eu-west-1", "PII", "DPO", "data exposure"]
+          source: security_compliance_policy.md
+
+  - id: q9
+    text: "If we need to remediate INC-4002, what is the sequence of actions and who needs to approve?"
+    expected_answer: |
+      Recommended remediation sequence:
+
+      1. IMMEDIATE: Revert firewall rule FW-404 to block external access to port 8083 on prod-eu-west-1
+         - Requires: Security team approval (per firewall rule management policy)
+         - The incident commander (Dave Wilson) must authorize as emergency change during investigation
+         - Retroactive change ticket must be filed within 4 hours
+
+      2. URGENT: Remediate CVE-2025-31337 on order-service
+         - This is a critical RCE vulnerability past its 24-hour remediation deadline
+         - Requires patching the container base image and redeploying
+         - Deploy requires change ticket with 2 approvers (order-service is critical tier)
+         - Commerce team (Dave Wilson primary, Irene Santos secondary) owns order-service
+
+      3. REQUIRED: Notify the DPO of potential data exposure
+         - EU region (eu-west-1) GDPR requirement
+         - order-service handles customer PII
+         - Notification must happen within 24 hours of detection
+
+      4. FOLLOW-UP: Investigate the anomalous traffic from 198.51.100.0/24
+         - Determine if the traffic was active exploitation or scanning
+         - Review all data accessed during the exposure window (12:00-present)
+    expected_sources:
+      - firewall_rules
+      - vulnerability_scans
+      - services
+      - incident_response_runbook.md
+      - security_compliance_policy.md
+      - change_management_policy.md
+      - service_catalog.md
+    metadata:
+      difficulty: hard_coordination
+      required_agents:
+        - infrastructure
+        - security
+        - runbook
+      required_tools:
+        - query_infrastructure
+        - query_security
+        - lookup_runbook
+      coordination_points: 4
+      required_hops:
+        - id: revert_firewall
+          any_of: ["revert", "block", "FW-404", "close port"]
+          source: firewall_rules
+        - id: patch_cve
+          any_of: ["CVE-2025-31337", "remediate", "patch", "container"]
+          source: vulnerability_scans
+        - id: approval_requirements
+          any_of: ["security team approval", "change ticket", "2 approvers", "incident commander"]
+          source: change_management_policy.md
+        - id: gdpr_notification
+          any_of: ["DPO", "GDPR", "data exposure", "24 hours"]
+          source: security_compliance_policy.md
+
+  - id: q10
+    text: "Should INC-4002 be escalated from sev2 to sev1? Justify with evidence from the data and policies."
+    expected_answer: |
+      Yes, INC-4002 should be escalated to Sev1. Multiple escalation triggers are met:
+
+      1. ANOMALOUS ACCESS (trigger 3): Access logs show multiple entries with anomaly_score > 0.7 (scores of 0.85, 0.91, 0.88, 0.95 from 198.51.100.x). The policy states anomaly_score > 0.7 triggers security review, and 3+ entries above 0.7 within 30 minutes triggers a security incident.
+
+      2. CASCADING RISK (trigger 1): order-service has downstream dependents -- notification-service depends on it (async). If order-service degrades further, notification-service will also be affected.
+
+      3. TIME THRESHOLD (trigger 2): INC-4002 was opened at 14:30 and as of the latest timeline entry (16:00) -- 90 minutes have passed and status is still "investigating" without identification. This exceeds the 60-minute threshold.
+
+      4. GDPR COMPLIANCE (trigger 4): order-service is in eu-west-1 and handles customer PII. The combination of an unpatched critical RCE vulnerability and anomalous external traffic creates a potential data exposure, which is a compliance trigger.
+    expected_sources:
+      - access_logs
+      - dependencies
+      - incidents
+      - incident_timeline
+      - incident_response_runbook.md
+      - security_compliance_policy.md
+    metadata:
+      difficulty: hard_coordination
+      required_agents:
+        - infrastructure
+        - security
+        - runbook
+      required_tools:
+        - query_infrastructure
+        - query_security
+        - lookup_runbook
+      coordination_points: 3
+      required_hops:
+        - id: anomaly_trigger
+          any_of: ["anomaly_score", "0.85", "0.91", "0.7", "active exploitation"]
+          source: access_logs
+        - id: cascading_trigger
+          any_of: ["notification-service", "downstream", "cascading", "dependent"]
+          source: dependencies
+        - id: time_trigger
+          any_of: ["60 minutes", "90 minutes", "investigating", "without identification"]
+          source: incidents
+        - id: gdpr_trigger
+          any_of: ["GDPR", "eu-west-1", "PII", "compliance", "data exposure"]
+          source: security_compliance_policy.md

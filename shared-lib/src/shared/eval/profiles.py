@@ -310,10 +310,195 @@ class ToolBranchingProfile(ScenarioProfile):
         return result
 
 
+class MultiAgentCoordinationProfile(ScenarioProfile):
+    """Metrics for multi-agent coordination with specialist domains."""
+
+    key = "multi_agent_coordination"
+
+    @staticmethod
+    def _extract_tool_names(answer_metadata: dict[str, Any]) -> list[str]:
+        names: list[str] = []
+        traces = (
+            answer_metadata.get("tool_trace")
+            or answer_metadata.get("tools_used")
+            or []
+        )
+        if not isinstance(traces, list):
+            return []
+        for item in traces:
+            if isinstance(item, dict):
+                candidate = item.get("tool") or item.get("name")
+                if candidate:
+                    names.append(str(candidate).strip())
+        return _dedupe_keep_order([n for n in names if n])
+
+    @staticmethod
+    def _extract_domains(answer_metadata: dict[str, Any]) -> list[str]:
+        """Extract specialist domains from tool trace or agents_used."""
+        agents = answer_metadata.get("agents_used")
+        if isinstance(agents, list) and agents:
+            return _dedupe_keep_order([str(a).strip() for a in agents if a])
+        traces = answer_metadata.get("tool_trace") or []
+        if not isinstance(traces, list):
+            return []
+        domains: list[str] = []
+        for item in traces:
+            if isinstance(item, dict):
+                domain = item.get("domain")
+                if domain:
+                    domains.append(str(domain).strip())
+        return _dedupe_keep_order(domains)
+
+    def question_metrics(
+        self, question: Question, result: RunResult, context: ProfileContext
+    ) -> dict[str, ScalarMetric]:
+        _ = context
+        qmeta = question.metadata or {}
+        ameta = result.answer.metadata if isinstance(result.answer.metadata, dict) else {}
+
+        difficulty = str(qmeta.get("difficulty", "easy"))
+        is_coordination = difficulty in ("coordination", "hard_coordination")
+        coordination_points = int(qmeta.get("coordination_points", 0))
+
+        # Agent coverage: did the framework invoke the right specialist domains?
+        required_agents = [
+            str(a).strip() for a in qmeta.get("required_agents", []) if a
+        ]
+        actual_agents = self._extract_domains(ameta)
+        required_set = {a.lower() for a in required_agents}
+        actual_set = {a.lower() for a in actual_agents}
+        agent_coverage = (
+            _safe_ratio(len(required_set & actual_set), len(required_set))
+            if required_set
+            else 0.0
+        )
+
+        # Hop coverage (same pattern as ToolBranchingProfile)
+        hops = qmeta.get("required_hops", [])
+        answer_text = _normalize_text(result.answer.text)
+        retrieved_sources = set(result.answer.sources_used)
+
+        matched_hops = 0
+        grounded_hops = 0
+        for hop in hops:
+            aliases = [_normalize_text(a) for a in hop.get("any_of", []) if a]
+            source = hop.get("source")
+            if aliases and any(alias in answer_text for alias in aliases):
+                matched_hops += 1
+                if source and source in retrieved_sources:
+                    grounded_hops += 1
+
+        hop_count = len(hops)
+        hop_coverage = _safe_ratio(matched_hops, hop_count) if hop_count else 0.0
+        grounded_hop_coverage = (
+            _safe_ratio(grounded_hops, hop_count) if hop_count else 0.0
+        )
+
+        # Tool coverage
+        expected_tools = _dedupe_keep_order(
+            [str(t).strip() for t in qmeta.get("required_tools", []) if str(t).strip()]
+        )
+        actual_tools = self._extract_tool_names(ameta)
+        actual_lower = {t.lower() for t in actual_tools}
+        matched_tools = sum(1 for t in expected_tools if t.lower() in actual_lower)
+        tool_coverage = (
+            _safe_ratio(matched_tools, len(expected_tools))
+            if expected_tools
+            else 0.0
+        )
+
+        coordination_success = (
+            agent_coverage >= 1.0 and hop_coverage >= 0.8
+        ) if is_coordination else False
+
+        return {
+            "difficulty": difficulty,
+            "is_coordination": is_coordination,
+            "is_easy": not is_coordination,
+            "coordination_points": coordination_points,
+            "required_agents": len(required_agents),
+            "actual_agents": len(actual_set),
+            "agent_coverage": agent_coverage,
+            "required_hops": hop_count,
+            "matched_hops": matched_hops,
+            "hop_coverage": hop_coverage,
+            "grounded_hop_coverage": grounded_hop_coverage,
+            "coordination_success": coordination_success,
+            "required_tools_count": len(expected_tools),
+            "matched_tools": matched_tools,
+            "tool_coverage": tool_coverage,
+            "has_tool_trace": bool(actual_tools),
+            "tool_calls_reported": int(ameta.get("tool_calls", len(actual_tools)))
+            if isinstance(ameta.get("tool_calls", len(actual_tools)), int)
+            else len(actual_tools),
+        }
+
+    def aggregate_metrics(
+        self, question_metrics: list[dict[str, ScalarMetric]], context: ProfileContext
+    ) -> dict[str, float]:
+        _ = context
+        coordination = [
+            m for m in question_metrics if bool(m.get("is_coordination", False))
+        ]
+        easy = [m for m in question_metrics if bool(m.get("is_easy", False))]
+
+        result: dict[str, float] = {
+            "easy_questions": float(len(easy)),
+            "coordination_questions": float(len(coordination)),
+        }
+
+        if coordination:
+            c_agent = [float(m["agent_coverage"]) for m in coordination]
+            c_hop = [
+                float(m["hop_coverage"])
+                for m in coordination
+                if "hop_coverage" in m
+            ]
+            c_grounded = [
+                float(m["grounded_hop_coverage"])
+                for m in coordination
+                if "grounded_hop_coverage" in m
+            ]
+            c_success = [
+                1.0 if bool(m.get("coordination_success", False)) else 0.0
+                for m in coordination
+            ]
+            c_tool = [
+                float(m["tool_coverage"])
+                for m in coordination
+                if float(m.get("required_tools_count", 0)) > 0
+            ]
+            result["coordination_avg_agent_coverage"] = _mean(c_agent)
+            if c_hop:
+                result["coordination_avg_hop_coverage"] = _mean(c_hop)
+            if c_grounded:
+                result["coordination_avg_grounded_hop_coverage"] = _mean(c_grounded)
+            result["coordination_success_rate"] = _mean(c_success)
+            if c_tool:
+                result["coordination_avg_tool_coverage"] = _mean(c_tool)
+
+        if easy:
+            e_hop = [
+                float(m["hop_coverage"]) for m in easy if "hop_coverage" in m
+            ]
+            if e_hop:
+                result["easy_avg_hop_coverage"] = _mean(e_hop)
+
+        tool_trace = [
+            1.0 if bool(m.get("has_tool_trace", False)) else 0.0
+            for m in question_metrics
+        ]
+        if tool_trace:
+            result["tool_trace_rate"] = _mean(tool_trace)
+
+        return result
+
+
 _PROFILE_REGISTRY: dict[str, ScenarioProfile] = {
     DefaultScenarioProfile.key: DefaultScenarioProfile(),
     MultiHopChainProfile.key: MultiHopChainProfile(),
     ToolBranchingProfile.key: ToolBranchingProfile(),
+    MultiAgentCoordinationProfile.key: MultiAgentCoordinationProfile(),
 }
 
 

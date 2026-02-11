@@ -1,0 +1,26 @@
+name: multi_agent_coordination
+version: "1.0"
+description: "Multi-agent incident response requiring coordination across infrastructure, security, and operations specialists"
+scenario_type: multi_agent_coordination
+documents_dir: documents/
+questions_file: questions.yaml
+config:
+  embedding_model: text-embedding-3-small
+  llm_model: gpt-5-mini
+  chunk_size: 500
+  chunk_overlap: 50
+  top_k: 4
+  database_seed_file: data/seed.sql
+evaluation:
+  profile: multi_agent_coordination
+modes:
+  baseline:
+    top_k: 4
+    max_context_chunks: 4
+    max_steps: 1
+    max_tool_calls: 3
+  capability:
+    top_k: 4
+    max_context_chunks: 8
+    max_steps: 15
+    max_tool_calls: 15

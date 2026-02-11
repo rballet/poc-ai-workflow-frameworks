@@ -32,6 +32,9 @@ uv run python scripts/run_eval.py --all --scenario multihop_qa --mode capability
 # Run agentic SQL scenario (designed for tool-driven workflows)
 uv run python scripts/run_eval.py --all --scenario agentic_sql_qa --mode capability
 
+# Run multi-agent coordination scenario (tests native multi-agent orchestration)
+uv run python scripts/run_eval.py --all --scenario multi_agent_coordination --mode capability
+
 # Run without LLM code review (faster, no extra API cost)
 uv run python scripts/run_eval.py --all --scenario rag_qa --skip-code-review
 
@@ -71,8 +74,9 @@ uv run python scripts/compare.py results/*.json -o results/comparison.md
 │
 ├── scenarios/               # Test scenarios with documents + questions
 │   ├── rag_qa/              # Simple single-hop RAG Q&A
-│   ├── multihop_qa/         # Multi-hop fact chaining across documents
-│   └── agentic_sql_qa/      # Tool-oriented SQL + policy branching QA
+│   ├── multihop_qa/              # Multi-hop fact chaining across documents
+│   ├── agentic_sql_qa/           # Tool-oriented SQL + policy branching QA
+│   └── multi_agent_coordination/ # Multi-agent incident response coordination
 │
 ├── scripts/
 │   ├── run_eval.py          # CLI to run benchmarks
