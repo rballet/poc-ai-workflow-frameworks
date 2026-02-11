@@ -29,6 +29,9 @@ uv run python scripts/run_eval.py --all --scenario rag_qa
 # Run capability mode (scenario-specific capability workflow + profile metrics)
 uv run python scripts/run_eval.py --all --scenario multihop_qa --mode capability
 
+# Run agentic SQL scenario (designed for tool-driven workflows)
+uv run python scripts/run_eval.py --all --scenario agentic_sql_qa --mode capability
+
 # Run without LLM code review (faster, no extra API cost)
 uv run python scripts/run_eval.py --all --scenario rag_qa --skip-code-review
 
@@ -63,10 +66,9 @@ uv run python scripts/compare.py results/*.json -o results/comparison.md
 │   └── smolagents/
 │
 ├── scenarios/               # Test scenarios with documents + questions
-│   └── rag_qa/              # Simple RAG Q&A over technical docs
-│       ├── spec.yaml        # Scenario config (model, chunk size, top-k)
-│       ├── questions.yaml   # Questions with expected answers and sources
-│       └── documents/       # Source documents (Python, HTTP, Git)
+│   ├── rag_qa/              # Simple single-hop RAG Q&A
+│   ├── multihop_qa/         # Multi-hop fact chaining across documents
+│   └── agentic_sql_qa/      # Tool-oriented SQL + policy branching QA
 │
 ├── scripts/
 │   ├── run_eval.py          # CLI to run benchmarks

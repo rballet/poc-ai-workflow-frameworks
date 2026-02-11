@@ -134,3 +134,15 @@ results/smolagents_rag_qa_20260209_174446.json
 ```
 
 Each file contains the full `FrameworkEvaluation`: per-question scores, aggregates, and metadata. The comparison script reads these files and produces a markdown report with summary tables and per-question breakdowns.
+
+## Scenario Profile Extensions
+
+Scenario profiles can add extra metrics via `shared.eval.profiles`:
+
+- `default`: no extra metrics
+- `multihop_chain_qa`: hop coverage and grounded hop coverage for multi-hop questions
+- `tool_branching_qa`: separates easy vs branching questions and tracks:
+  - branching hop coverage / success rate
+  - grounded hop coverage on branching questions
+  - tool coverage against expected tools (when tool traces are reported)
+  - tool trace reporting rate

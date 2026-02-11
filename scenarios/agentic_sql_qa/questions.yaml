@@ -1,0 +1,175 @@
+scenario: agentic_sql_qa
+description: Agentic QA over local SQL data plus support policy documents
+
+questions:
+  - id: q1
+    text: "What account tier and operating region does Acme Health belong to?"
+    expected_answer: >
+      Acme Health is an Enterprise account in the us-west region.
+    expected_sources:
+      - customers
+    metadata:
+      difficulty: easy
+      branching: false
+      required_tools: ["run_sql"]
+      required_hops:
+        - id: customer_lookup
+          any_of: ["Acme Health", "Enterprise", "us-west"]
+          source: customers
+
+  - id: q2
+    text: "Are weather-related shipment delays eligible for shipping credits?"
+    expected_answer: >
+      No. Weather or force majeure delays are explicitly excluded from shipping
+      credit eligibility.
+    expected_sources:
+      - support_policies.md
+    metadata:
+      difficulty: easy
+      branching: false
+      required_tools: ["lookup_doc"]
+      required_hops:
+        - id: weather_exclusion
+          any_of: ["not eligible", "excluded", "weather", "force majeure"]
+          source: support_policies.md
+
+  - id: q3
+    text: "How many unresolved P1 incidents are currently open?"
+    expected_answer: >
+      There are 2 unresolved P1 incidents currently open.
+    expected_sources:
+      - incidents
+    metadata:
+      difficulty: easy
+      branching: false
+      required_tools: ["run_sql"]
+      required_hops:
+        - id: unresolved_count
+          any_of: ["2 unresolved P1", "2"]
+          source: incidents
+
+  - id: q4
+    text: "Can order ORD-104 receive a shipping credit, and what is the maximum amount?"
+    expected_answer: >
+      Yes. ORD-104 was delayed by 30 hours due to carrier misroute, so it is
+      eligible. The customer is Enterprise and the order is $7000, so 15%
+      credit applies: $1050 (under the $1500 cap).
+    expected_sources:
+      - orders
+      - shipments
+      - customers
+      - support_policies.md
+    metadata:
+      difficulty: branching
+      branching: true
+      branching_points: 2
+      required_tools: ["run_sql", "lookup_doc"]
+      required_hops:
+        - id: delay_eligibility
+          any_of: ["30 hours", "carrier misroute", "eligible"]
+          source: shipments
+        - id: enterprise_tier
+          any_of: ["Enterprise", "15%"]
+          source: customers
+        - id: refund_math
+          any_of: ["$1050", "1050"]
+          source: support_policies.md
+
+  - id: q5
+    text: "Should CASE-778 be auto-escalated, and which team should own it?"
+    expected_answer: >
+      Yes. CASE-778 should be auto-escalated because it is linked to unresolved
+      P1 payment_gateway incident INC-9001 and the Enterprise customer has been
+      waiting 26 hours. The owning team should be Platform Reliability.
+    expected_sources:
+      - support_cases
+      - incidents
+      - customers
+      - support_policies.md
+      - escalation_matrix.md
+    metadata:
+      difficulty: branching
+      branching: true
+      branching_points: 3
+      required_tools: ["run_sql", "lookup_doc"]
+      required_hops:
+        - id: p1_trigger
+          any_of: ["unresolved P1", "INC-9001", "payment_gateway"]
+          source: incidents
+        - id: wait_trigger
+          any_of: ["26 hours", "Enterprise customer waiting"]
+          source: support_cases
+        - id: route_team
+          any_of: ["Platform Reliability"]
+          source: escalation_matrix.md
+
+  - id: q6
+    text: "For order ORD-109, what customer-facing compensation should be offered?"
+    expected_answer: >
+      Offer a goodwill credit of $760. ORD-109 had a pick_pack_error incident
+      and belongs to an Enterprise customer, so the policy applies 8% of the
+      $9500 order total.
+    expected_sources:
+      - orders
+      - incidents
+      - customers
+      - support_policies.md
+    metadata:
+      difficulty: branching
+      branching: true
+      branching_points: 2
+      required_tools: ["run_sql", "lookup_doc"]
+      required_hops:
+        - id: incident_type
+          any_of: ["pick_pack_error"]
+          source: incidents
+        - id: policy_rule
+          any_of: ["8%", "goodwill credit"]
+          source: support_policies.md
+        - id: compensation_math
+          any_of: ["$760", "760"]
+          source: orders
+
+  - id: q7
+    text: "Who is the current on-call engineer for the Commercial team?"
+    expected_answer: >
+      The current on-call engineer for the Commercial team is Omar Santos.
+    expected_sources:
+      - oncall
+    metadata:
+      difficulty: easy
+      branching: false
+      required_tools: ["run_sql"]
+      required_hops:
+        - id: team_oncall
+          any_of: ["Omar Santos", "Commercial"]
+          source: oncall
+
+  - id: q8
+    text: "Northwind Hospitals has an open issue on ORD-109. Should we wake the Sev1 commander now, or keep it with account support?"
+    expected_answer: >
+      Keep it with account support; do not wake the Sev1 commander. ORD-109 is
+      tied to a resolved P2 incident, and CASE-779 does not hit auto-escalation
+      thresholds. The case should remain with Strategic Accounts on-call.
+    expected_sources:
+      - support_cases
+      - incidents
+      - customers
+      - support_policies.md
+      - escalation_matrix.md
+      - oncall
+    metadata:
+      difficulty: branching
+      branching: true
+      branching_points: 3
+      required_tools: ["run_sql", "lookup_doc"]
+      required_hops:
+        - id: incident_severity
+          any_of: ["P2", "resolved"]
+          source: incidents
+        - id: threshold_check
+          any_of: ["does not hit auto-escalation", "10 hours", "2 hours"]
+          source: support_cases
+        - id: ownership
+          any_of: ["Strategic Accounts", "Dana Li"]
+          source: oncall

@@ -27,6 +27,18 @@ def _mean(values: list[float]) -> float:
     return sum(values) / len(values)
 
 
+def _dedupe_keep_order(items: list[str]) -> list[str]:
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for item in items:
+        key = item.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(item)
+    return deduped
+
+
 @dataclass(frozen=True)
 class ProfileContext:
     """Run context provided to scenario profiles."""
@@ -153,9 +165,155 @@ class MultiHopChainProfile(ScenarioProfile):
         return result
 
 
+class ToolBranchingProfile(ScenarioProfile):
+    """Metrics for tool-oriented QA with easy and branching paths."""
+
+    key = "tool_branching_qa"
+
+    @staticmethod
+    def _extract_tool_names(answer_metadata: dict[str, Any]) -> list[str]:
+        names: list[str] = []
+        traces = (
+            answer_metadata.get("tool_trace")
+            or answer_metadata.get("tools_used")
+            or answer_metadata.get("tool_calls")
+            or []
+        )
+        if not isinstance(traces, list):
+            return []
+        for item in traces:
+            if isinstance(item, str):
+                cleaned = item.strip()
+                if cleaned:
+                    names.append(cleaned)
+                continue
+            if isinstance(item, dict):
+                candidate = item.get("tool") or item.get("name")
+                if candidate:
+                    names.append(str(candidate).strip())
+        return _dedupe_keep_order([n for n in names if n])
+
+    def question_metrics(
+        self, question: Question, result: RunResult, context: ProfileContext
+    ) -> dict[str, ScalarMetric]:
+        _ = context
+        qmeta = question.metadata or {}
+        ameta = result.answer.metadata if isinstance(result.answer.metadata, dict) else {}
+
+        hops = qmeta.get("required_hops", [])
+        is_branching = bool(
+            qmeta.get("branching", False)
+            or int(qmeta.get("branching_points", 0)) > 0
+            or len(hops) > 1
+        )
+
+        answer_text = _normalize_text(result.answer.text)
+        retrieved_sources = set(result.answer.sources_used)
+
+        matched_hops = 0
+        grounded_hops = 0
+        for hop in hops:
+            aliases = [_normalize_text(a) for a in hop.get("any_of", []) if a]
+            source = hop.get("source")
+            if aliases and any(alias in answer_text for alias in aliases):
+                matched_hops += 1
+                if source and source in retrieved_sources:
+                    grounded_hops += 1
+
+        hop_count = len(hops)
+        hop_coverage = _safe_ratio(matched_hops, hop_count) if hop_count else 0.0
+        grounded_hop_coverage = (
+            _safe_ratio(grounded_hops, hop_count) if hop_count else 0.0
+        )
+
+        expected_tools = [
+            str(tool).strip()
+            for tool in qmeta.get("required_tools", [])
+            if str(tool).strip()
+        ]
+        expected_tools = _dedupe_keep_order(expected_tools)
+        actual_tools = self._extract_tool_names(ameta)
+        actual_lower = {tool.lower() for tool in actual_tools}
+        matched_tools = sum(1 for tool in expected_tools if tool.lower() in actual_lower)
+        tool_coverage = (
+            _safe_ratio(matched_tools, len(expected_tools)) if expected_tools else 0.0
+        )
+
+        return {
+            "is_branching": is_branching,
+            "is_easy": not is_branching,
+            "required_hops": hop_count,
+            "matched_hops": matched_hops,
+            "hop_coverage": hop_coverage,
+            "grounded_hop_coverage": grounded_hop_coverage,
+            "branching_success": (hop_coverage >= 1.0) if is_branching and hop_count else False,
+            "required_tools": len(expected_tools),
+            "matched_tools": matched_tools,
+            "tool_coverage": tool_coverage,
+            "has_tool_trace": bool(actual_tools),
+            "tool_calls_reported": int(
+                ameta.get("tool_calls", len(actual_tools))
+            )
+            if isinstance(ameta.get("tool_calls", len(actual_tools)), int)
+            else len(actual_tools),
+        }
+
+    def aggregate_metrics(
+        self, question_metrics: list[dict[str, ScalarMetric]], context: ProfileContext
+    ) -> dict[str, float]:
+        _ = context
+        branching = [m for m in question_metrics if bool(m.get("is_branching", False))]
+        easy = [m for m in question_metrics if bool(m.get("is_easy", False))]
+
+        result: dict[str, float] = {
+            "branching_questions": float(len(branching)),
+            "easy_questions": float(len(easy)),
+        }
+
+        if branching:
+            b_cov = [float(m["hop_coverage"]) for m in branching if "hop_coverage" in m]
+            b_grounded = [
+                float(m["grounded_hop_coverage"])
+                for m in branching
+                if "grounded_hop_coverage" in m
+            ]
+            b_success = [
+                1.0 if bool(m.get("branching_success", False)) else 0.0
+                for m in branching
+            ]
+            b_tool_cov = [
+                float(m["tool_coverage"])
+                for m in branching
+                if float(m.get("required_tools", 0.0)) > 0.0
+            ]
+            if b_cov:
+                result["branching_avg_hop_coverage"] = _mean(b_cov)
+            if b_grounded:
+                result["branching_avg_grounded_hop_coverage"] = _mean(b_grounded)
+            if b_success:
+                result["branching_success_rate"] = _mean(b_success)
+            if b_tool_cov:
+                result["branching_avg_tool_coverage"] = _mean(b_tool_cov)
+
+        if easy:
+            e_cov = [float(m["hop_coverage"]) for m in easy if "hop_coverage" in m]
+            if e_cov:
+                result["easy_avg_hop_coverage"] = _mean(e_cov)
+
+        tool_trace = [
+            1.0 if bool(m.get("has_tool_trace", False)) else 0.0
+            for m in question_metrics
+        ]
+        if tool_trace:
+            result["tool_trace_rate"] = _mean(tool_trace)
+
+        return result
+
+
 _PROFILE_REGISTRY: dict[str, ScenarioProfile] = {
     DefaultScenarioProfile.key: DefaultScenarioProfile(),
     MultiHopChainProfile.key: MultiHopChainProfile(),
+    ToolBranchingProfile.key: ToolBranchingProfile(),
 }
 
 
