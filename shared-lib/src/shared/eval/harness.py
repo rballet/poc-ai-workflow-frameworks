@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from shared.interface import Document, Question, RAGFramework, RunResult
+from shared.interface import Answer, Document, Question, RAGFramework, RunResult, UsageStats
 from shared.eval.llm_judge import JudgeResult, judge_answer
 from shared.eval.metrics import compute_cost
 from shared.eval.retrieval import retrieval_precision, retrieval_recall
@@ -123,6 +124,7 @@ async def evaluate_framework(
     framework_key: str | None = None,
     scenario_description: str = "",
     skip_code_review: bool = False,
+    query_timeout_seconds: float = 120.0,
 ) -> FrameworkEvaluation:
     """Run a full evaluation of one framework on one scenario.
 
@@ -156,7 +158,52 @@ async def evaluate_framework(
 
     for question in questions:
         # 2. Query
-        result: RunResult = await framework.query(question.text)
+        query_timed_out = False
+        query_error: str | None = None
+        try:
+            result: RunResult = await asyncio.wait_for(
+                framework.query(question.text),
+                timeout=query_timeout_seconds,
+            )
+        except TimeoutError:
+            query_timed_out = True
+            result = RunResult(
+                answer=Answer(
+                    question_id=question.id,
+                    text=(
+                        "Query timed out before producing an answer."
+                    ),
+                    sources_used=[],
+                    metadata={
+                        "error": "timeout",
+                        "query_timeout_seconds": query_timeout_seconds,
+                    },
+                ),
+                usage=UsageStats(
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    total_tokens=0,
+                    latency_seconds=query_timeout_seconds,
+                    model_name="timeout",
+                ),
+            )
+        except Exception as err:
+            query_error = f"{type(err).__name__}: {err}"
+            result = RunResult(
+                answer=Answer(
+                    question_id=question.id,
+                    text="Framework query failed before producing an answer.",
+                    sources_used=[],
+                    metadata={"error": "exception", "exception": query_error},
+                ),
+                usage=UsageStats(
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    total_tokens=0,
+                    latency_seconds=0.0,
+                    model_name="error",
+                ),
+            )
 
         # 3. Cost
         cost = compute_cost(
@@ -166,13 +213,28 @@ async def evaluate_framework(
         )
 
         # 4. LLM-as-judge
-        judge: JudgeResult = await judge_answer(
-            question=question.text,
-            expected=question.expected_answer,
-            actual=result.answer.text,
-            context_sources=result.answer.sources_used,
-            model=judge_model,
-        )
+        if query_timed_out:
+            judge = JudgeResult(
+                correctness=0.0,
+                completeness=0.0,
+                faithfulness=0.0,
+                reasoning=f"Query timed out after {query_timeout_seconds:g}s.",
+            )
+        elif query_error is not None:
+            judge = JudgeResult(
+                correctness=0.0,
+                completeness=0.0,
+                faithfulness=0.0,
+                reasoning=f"Framework query error: {query_error}",
+            )
+        else:
+            judge = await judge_answer(
+                question=question.text,
+                expected=question.expected_answer,
+                actual=result.answer.text,
+                context_sources=result.answer.sources_used,
+                model=judge_model,
+            )
 
         # 5. Retrieval metrics
         r_precision = retrieval_precision(

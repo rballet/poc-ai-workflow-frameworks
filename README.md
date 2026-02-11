@@ -38,6 +38,9 @@ uv run python scripts/run_eval.py --all --scenario rag_qa --skip-code-review
 # Disable shared embedding store (each framework embeds independently)
 uv run python scripts/run_eval.py --all --scenario rag_qa --no-shared-store
 
+# Set per-question timeout guardrail (default is 120s)
+uv run python scripts/run_eval.py --all --scenario agentic_sql_qa --mode capability --query-timeout-seconds 120
+
 # Compare results
 uv run python scripts/compare.py results/*.json -o results/comparison.md
 ```
@@ -93,6 +96,10 @@ class RAGFramework(Protocol):
 Frameworks can optionally implement `ConfigurableFramework.configure(...)` to adapt behavior by scenario mode (`baseline` vs `capability`) without changing the base protocol. Scenario-specific implementations (e.g. `multihop_qa.py`) are preferred for advanced behavior.
 
 The evaluation harness feeds the same documents and questions to each implementation, then collects metrics through a shared pipeline. See [METRICS.md](METRICS.md) for details on what is measured and how.
+
+The comparison report also includes:
+- a **Derived Scorecard** (`Capability`, `Efficiency`, `Developer Experience`) built from existing metrics
+- **Runtime Distribution** (`latency p50`, `latency p95`) to show long-tail behavior
 
 ## Design Principles
 

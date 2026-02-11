@@ -135,6 +135,7 @@ async def run_single(
     scenario: ScenarioDefinition,
     mode: str,
     judge_model: str,
+    query_timeout_seconds: float,
     skip_code_quality: bool = False,
     skip_code_review: bool = False,
     embedding_store: EmbeddingStore | None = None,
@@ -189,6 +190,7 @@ async def run_single(
         framework_key=framework_name,
         scenario_description=scenario.description,
         skip_code_review=skip_code_review,
+        query_timeout_seconds=query_timeout_seconds,
     )
 
     print(f"\nResults for {evaluation.framework_name}:")
@@ -250,6 +252,12 @@ async def main():
     )
     parser.add_argument("--judge-model", default="gpt-4o-mini", help="Model for LLM judge")
     parser.add_argument(
+        "--query-timeout-seconds",
+        type=float,
+        default=120.0,
+        help="Per-question timeout for framework.query()",
+    )
+    parser.add_argument(
         "--skip-code-quality",
         action="store_true",
         help="Skip code quality evaluation entirely",
@@ -287,6 +295,7 @@ async def main():
                 scenario,
                 args.mode,
                 args.judge_model,
+                args.query_timeout_seconds,
                 skip_code_quality=args.skip_code_quality,
                 skip_code_review=args.skip_code_review,
                 embedding_store=embedding_store,

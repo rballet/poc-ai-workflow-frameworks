@@ -4,7 +4,7 @@
 Benchmarks AI agent/workflow frameworks on identical scenarios to compare latency, cost, quality, and developer experience.
 
 Frameworks: LangGraph 1.0.8, Pydantic AI 1.56.0, smolagents 1.24.0
-Current scenarios: RAG Q&A, Multi-hop Q&A
+Current scenarios: RAG Q&A, Multi-hop Q&A, Agentic SQL QA
 
 ## Tech Stack
 - Python >= 3.12, package manager: uv (workspace mode)
@@ -25,6 +25,7 @@ Current scenarios: RAG Q&A, Multi-hop Q&A
 uv sync --all-packages                                                # install all
 uv run python scripts/run_eval.py --framework pydantic_ai --scenario rag_qa  # one framework
 uv run python scripts/run_eval.py --all --scenario rag_qa                    # all frameworks
+uv run python scripts/run_eval.py --all --scenario agentic_sql_qa --mode capability  # tool-driven scenario
 uv run python scripts/compare.py results/*.json                              # compare
 ```
 
@@ -36,6 +37,7 @@ uv run python scripts/compare.py results/*.json                              # c
 - Test documents are small markdown files in `scenarios/*/documents/`
 - Scenario specs support `modes.baseline` and `modes.capability` for fair-vs-capability runs
 - Scenario-specific evaluation logic is configured via `spec.yaml -> evaluation.profile`
+- Per-question timeout guardrail is configurable with `--query-timeout-seconds` (default: `120`)
 
 ## Environment Variables
 - `OPENAI_API_KEY` — Required for embeddings and LLM calls

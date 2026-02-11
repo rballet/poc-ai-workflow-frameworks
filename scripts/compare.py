@@ -6,6 +6,7 @@ import argparse
 import json
 import sys
 from datetime import datetime, timezone
+import math
 from pathlib import Path
 from typing import Any
 
@@ -47,6 +48,140 @@ def _numeric(value: Any) -> float | None:
     if isinstance(value, (int, float)):
         return float(value)
     return None
+
+
+def _mean(values: list[float]) -> float:
+    if not values:
+        return 0.0
+    return sum(values) / len(values)
+
+
+def _percentile(values: list[float], p: float) -> float:
+    """Linear-interpolated percentile with p in [0, 1]."""
+    if not values:
+        return 0.0
+    if p <= 0:
+        return min(values)
+    if p >= 1:
+        return max(values)
+    sorted_vals = sorted(values)
+    position = (len(sorted_vals) - 1) * p
+    lower = int(math.floor(position))
+    upper = int(math.ceil(position))
+    if lower == upper:
+        return sorted_vals[lower]
+    weight = position - lower
+    return sorted_vals[lower] * (1 - weight) + sorted_vals[upper] * weight
+
+
+def _min_max_scale(
+    value: float,
+    series: list[float],
+    *,
+    higher_is_better: bool,
+) -> float:
+    low = min(series)
+    high = max(series)
+    if abs(high - low) < 1e-12:
+        return 1.0
+    if higher_is_better:
+        return (value - low) / (high - low)
+    return (high - value) / (high - low)
+
+
+def _scenario_capability_signals(extra: dict[str, Any]) -> list[float]:
+    """Return normalized scenario-specific quality signals, if present."""
+    candidate_keys = [
+        "branching_success_rate",
+        "multi_hop_chain_success_rate",
+        "branching_avg_grounded_hop_coverage",
+        "multi_hop_avg_grounded_hop_coverage",
+        "branching_avg_hop_coverage",
+        "multi_hop_avg_hop_coverage",
+    ]
+    values: list[float] = []
+    for key in candidate_keys:
+        numeric = _numeric(extra.get(key))
+        if numeric is None:
+            continue
+        values.append(max(0.0, min(1.0, numeric)))
+    return values
+
+
+def _build_scorecard(results: list[dict]) -> dict[str, dict[str, float | None]]:
+    """Compute derived 0-100 scores from already-collected metrics."""
+    latencies = [float(r.get("avg_latency", 0.0)) for r in results]
+    costs = [float(r.get("total_cost_usd", 0.0)) for r in results]
+    tokens = [float(r.get("total_tokens", 0.0)) for r in results]
+
+    # Optional DX series
+    mi_series: list[float] = []
+    cc_series: list[float] = []
+    review_series: list[float] = []
+    for r in results:
+        static = (r.get("code_quality") or {}).get("static_metrics") or {}
+        mi = _numeric(static.get("maintainability_index"))
+        cc = _numeric(static.get("avg_cyclomatic_complexity"))
+        if mi is not None:
+            mi_series.append(mi)
+        if cc is not None:
+            cc_series.append(cc)
+        review = _numeric(((r.get("code_quality") or {}).get("code_review") or {}).get("avg_score"))
+        if review is not None:
+            review_series.append(review)
+
+    scores: dict[str, dict[str, float | None]] = {}
+    for r in results:
+        name = str(r.get("framework_name", "unknown"))
+        extra = r.get("extra_aggregates") or {}
+
+        correctness = max(0.0, min(1.0, float(r.get("avg_correctness", 0.0)) / 5.0))
+        completeness = max(0.0, min(1.0, float(r.get("avg_completeness", 0.0)) / 5.0))
+        faithfulness = max(0.0, min(1.0, float(r.get("avg_faithfulness", 0.0)) / 5.0))
+        base_capability = _mean([correctness, completeness, faithfulness])
+        scenario_signals = _scenario_capability_signals(extra)
+        capability = _mean([base_capability, *scenario_signals])
+
+        latency_score = _min_max_scale(float(r.get("avg_latency", 0.0)), latencies, higher_is_better=False)
+        cost_score = _min_max_scale(float(r.get("total_cost_usd", 0.0)), costs, higher_is_better=False)
+        token_score = _min_max_scale(float(r.get("total_tokens", 0.0)), tokens, higher_is_better=False)
+        efficiency = _mean([
+            0.4 * latency_score,
+            0.4 * cost_score,
+            0.2 * token_score,
+        ])
+
+        static = (r.get("code_quality") or {}).get("static_metrics") or {}
+        dx_parts: list[float] = []
+        mi = _numeric(static.get("maintainability_index"))
+        if mi is not None and mi_series:
+            dx_parts.append(_min_max_scale(mi, mi_series, higher_is_better=True))
+        cc = _numeric(static.get("avg_cyclomatic_complexity"))
+        if cc is not None and cc_series:
+            dx_parts.append(_min_max_scale(cc, cc_series, higher_is_better=False))
+        type_ratio = _numeric(static.get("type_annotation_ratio"))
+        if type_ratio is not None:
+            dx_parts.append(max(0.0, min(1.0, type_ratio)))
+        review = _numeric(((r.get("code_quality") or {}).get("code_review") or {}).get("avg_score"))
+        if review is not None and review_series:
+            dx_parts.append(max(0.0, min(1.0, review / 5.0)))
+        dx = _mean(dx_parts) if dx_parts else None
+
+        scores[name] = {
+            "capability": 100.0 * capability,
+            "efficiency": 100.0 * efficiency,
+            "dx": (100.0 * dx) if dx is not None else None,
+        }
+    return scores
+
+
+def _latency_percentiles(result: dict) -> tuple[float, float]:
+    values = [
+        float(q.get("latency_seconds", 0.0))
+        for q in result.get("questions", [])
+        if isinstance(q, dict)
+    ]
+    return _percentile(values, 0.50), _percentile(values, 0.95)
 
 
 def generate_comparison_report(results: list[dict]) -> str:
@@ -97,6 +232,50 @@ def generate_comparison_report(results: list[dict]) -> str:
                 row.append(f"{val:{fmt}}")
         lines.append("| " + " | ".join(row) + " |")
 
+    lines.append("")
+
+    # --- Derived scorecard ---
+    lines.append("## Derived Scorecard (0-100)")
+    lines.append("")
+    lines.append(
+        "These derived scores are computed from existing metrics and shown as "
+        "decision aids (not as a single winner metric)."
+    )
+    lines.append("")
+    scorecard = _build_scorecard(results)
+    headers = ["Axis"] + [r["framework_name"] for r in results]
+    lines.append("| " + " | ".join(headers) + " |")
+    lines.append("| " + " | ".join(["---"] * len(headers)) + " |")
+    for axis, label in [
+        ("capability", "Capability"),
+        ("efficiency", "Efficiency"),
+        ("dx", "Developer Experience"),
+    ]:
+        row = [label]
+        for r in results:
+            framework_name = r["framework_name"]
+            value = scorecard.get(framework_name, {}).get(axis)
+            if value is None:
+                row.append("N/A")
+            else:
+                row.append(f"{value:.1f}")
+        lines.append("| " + " | ".join(row) + " |")
+    lines.append("")
+
+    # --- Stability proxies ---
+    lines.append("## Runtime Distribution")
+    lines.append("")
+    headers = ["Metric"] + [r["framework_name"] for r in results]
+    lines.append("| " + " | ".join(headers) + " |")
+    lines.append("| " + " | ".join(["---"] * len(headers)) + " |")
+    p50_row = ["Latency p50 (s)"]
+    p95_row = ["Latency p95 (s)"]
+    for r in results:
+        p50, p95 = _latency_percentiles(r)
+        p50_row.append(f"{p50:.2f}")
+        p95_row.append(f"{p95:.2f}")
+    lines.append("| " + " | ".join(p50_row) + " |")
+    lines.append("| " + " | ".join(p95_row) + " |")
     lines.append("")
 
     # --- Extra aggregate metrics ---

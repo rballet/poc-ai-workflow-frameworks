@@ -7,6 +7,7 @@ This file summarizes the latest benchmark findings and links to the detailed rep
 - Multi-hop baseline: [`results/comparison_multihop_qa_baseline.md`](results/comparison_multihop_qa_baseline.md)
 - Multi-hop capability: [`results/comparison_multihop_qa_capability.md`](results/comparison_multihop_qa_capability.md)
 - RAG baseline: [`results/comparison_rag_qa_baseline.md`](results/comparison_rag_qa_baseline.md)
+- Agentic SQL capability: [`results/comparison_agentic_sql_qa_capability.md`](results/comparison_agentic_sql_qa_capability.md)
 - Metric definitions: [`METRICS.md`](METRICS.md)
 
 ## Main Findings
@@ -34,3 +35,20 @@ This file summarizes the latest benchmark findings and links to the detailed rep
 - For multi-hop QA, framework orchestration style matters more than single-pass retrieval quality.
 - If your priority is best answer quality under loose budgets, the most agentic approach can win.
 - If your priority is predictable cost/latency, structured or graph-based loops are generally easier to control.
+
+## Latest Findings: Agentic SQL (Capability)
+
+- Best overall balance in this scenario: **Pydantic AI**.
+  - Strong quality (`correctness/completeness/faithfulness`) with lower latency/cost than alternatives.
+  - Why it works well here: native tool loop stays efficient while still grounding decisions in SQL + docs.
+- **LangGraph** is close on efficiency but less consistent on hard branching outcomes in this run.
+  - Why: graph loop is robust, but additional iterations/tool turns can amplify variance on decision-heavy questions.
+- **smolagents** remains the most expensive/slow path in this scenario configuration.
+  - Why: planning-heavy tool orchestration produces substantially more tokens and wall-clock time.
+  - It can still perform well on some complex questions, but reliability and runtime overhead are current risks.
+
+### Artifacts used for this summary
+
+- Pydantic AI run: [`results/pydantic_ai_agentic_sql_qa_20260211_174017.json`](results/pydantic_ai_agentic_sql_qa_20260211_174017.json)
+- LangGraph run: [`results/langgraph_agentic_sql_qa_20260211_174355.json`](results/langgraph_agentic_sql_qa_20260211_174355.json)
+- smolagents run (latest completed full-metrics artifact): [`results/smolagents_agentic_sql_qa_20260211_171939.json`](results/smolagents_agentic_sql_qa_20260211_171939.json)
