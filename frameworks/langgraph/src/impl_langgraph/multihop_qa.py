@@ -225,7 +225,10 @@ class LangGraphRAG:
             if state["steps"] >= max_steps:
                 return {"should_stop": True}
 
-            llm = ChatOpenAI(model=model, temperature=0)
+            llm_kw: dict = {"model": model}
+            if "gpt-5" not in model:
+                llm_kw["temperature"] = 0
+            llm = ChatOpenAI(**llm_kw)
             context_preview = "\n\n---\n\n".join(state["context_chunks"])
             messages = [
                 SystemMessage(content=ASSESS_SYSTEM_PROMPT),
@@ -267,7 +270,10 @@ class LangGraphRAG:
 
         async def generate(state: RAGState) -> dict:
             context = "\n\n---\n\n".join(state["context_chunks"])
-            llm = ChatOpenAI(model=model, temperature=0)
+            llm_kw: dict = {"model": model}
+            if "gpt-5" not in model:
+                llm_kw["temperature"] = 0
+            llm = ChatOpenAI(**llm_kw)
             messages = [
                 SystemMessage(content=ANSWER_SYSTEM_PROMPT),
                 HumanMessage(content=f"Context:\n{context}\n\nQuestion: {state['question']}"),

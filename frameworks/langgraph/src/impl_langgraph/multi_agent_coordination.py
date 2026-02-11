@@ -133,16 +133,19 @@ class LangGraphRAG:
     def _build_baseline_graph(self):
         """Single-agent graph with all three tools (baseline mode)."""
         runtime = self._runtime
-        llm = ChatOpenAI(model=self._model, temperature=0)
+        llm_kwargs: dict = {"model": self._model}
+        if "gpt-5" not in self._model:
+            llm_kwargs["temperature"] = 0
+        llm = ChatOpenAI(**llm_kwargs)
 
         @tool("query_infrastructure")
         def query_infrastructure(query: str) -> str:
-            """Execute read-only SQL on infrastructure tables (clusters, services, dependencies, recent_deploys, incidents, incident_timeline)."""
+            """Execute read-only SQL (SELECT/WITH/PRAGMA) on infrastructure tables: clusters, services, dependencies, recent_deploys, incidents, incident_timeline."""
             return runtime.query_infrastructure(query)
 
         @tool("query_security")
         def query_security(query: str) -> str:
-            """Execute read-only SQL on security tables (vulnerability_scans, access_logs, firewall_rules, incidents, incident_timeline)."""
+            """Execute read-only SQL (SELECT/WITH/PRAGMA) on security tables: vulnerability_scans, access_logs, firewall_rules, incidents, incident_timeline."""
             return runtime.query_security(query)
 
         @tool("lookup_runbook")
@@ -175,17 +178,20 @@ class LangGraphRAG:
     def _build_capability_graph(self):
         """Multi-agent graph: router → specialist agents → synthesizer (capability mode)."""
         runtime = self._runtime
-        llm = ChatOpenAI(model=self._model, temperature=0)
+        llm_kwargs: dict = {"model": self._model}
+        if "gpt-5" not in self._model:
+            llm_kwargs["temperature"] = 0
+        llm = ChatOpenAI(**llm_kwargs)
 
         # --- Specialist tools ---
         @tool("query_infrastructure")
         def query_infrastructure(query: str) -> str:
-            """Execute read-only SQL on infrastructure tables (clusters, services, dependencies, recent_deploys, incidents, incident_timeline)."""
+            """Execute read-only SQL (SELECT/WITH/PRAGMA) on infrastructure tables: clusters, services, dependencies, recent_deploys, incidents, incident_timeline."""
             return runtime.query_infrastructure(query)
 
         @tool("query_security")
         def query_security(query: str) -> str:
-            """Execute read-only SQL on security tables (vulnerability_scans, access_logs, firewall_rules, incidents, incident_timeline)."""
+            """Execute read-only SQL (SELECT/WITH/PRAGMA) on security tables: vulnerability_scans, access_logs, firewall_rules, incidents, incident_timeline."""
             return runtime.query_security(query)
 
         @tool("lookup_runbook")

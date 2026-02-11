@@ -142,7 +142,10 @@ class LangGraphRAG:
             question = state["question"]
             context = "\n\n---\n\n".join(state["context_chunks"])
 
-            llm = ChatOpenAI(model=model, temperature=0)
+            llm_kw: dict = {"model": model}
+            if "gpt-5" not in model:
+                llm_kw["temperature"] = 0
+            llm = ChatOpenAI(**llm_kw)
             messages = [
                 SystemMessage(content=SYSTEM_PROMPT),
                 HumanMessage(

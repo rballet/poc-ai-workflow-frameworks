@@ -32,14 +32,16 @@ def _generate_sync(model: LiteLLMModel, system_prompt: str, user_message: str) -
     """Call the LLM synchronously via litellm (smolagents backend)."""
     import litellm
 
-    response = litellm.completion(
-        model=model.model_id,
-        messages=[
+    comp_kwargs: dict = {
+        "model": model.model_id,
+        "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message},
         ],
-        temperature=0,
-    )
+    }
+    if "gpt-5" not in model.model_id:
+        comp_kwargs["temperature"] = 0
+    response = litellm.completion(**comp_kwargs)
     choice = response.choices[0]
     usage = response.usage
     return {
@@ -237,7 +239,10 @@ class SmolAgentsRAG:
         """Answer question via baseline single-pass or native tool-driven capability mode."""
         start = time.perf_counter()
 
-        model = LiteLLMModel(model_id=self._model_id, temperature=0)
+        model_kw: dict = {"model_id": self._model_id}
+        if "gpt-5" not in self._model_id:
+            model_kw["temperature"] = 0
+        model = LiteLLMModel(**model_kw)
         if self._mode == "baseline":
             retrieval = self._retrieve_once(question, self._top_k)
             context = "\n\n---\n\n".join(retrieval.chunks[: self._max_context_chunks])

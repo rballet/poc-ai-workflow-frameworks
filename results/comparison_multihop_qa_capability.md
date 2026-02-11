@@ -20,6 +20,14 @@ Questions: 9
 | Avg Retrieval Precision | 0.81 | 0.84 | 0.82 |
 | Avg Retrieval Recall | 0.93 | 0.91 | 0.87 |
 
+> **Note on smolagents latency/token usage:** smolagents relies on the `stop`
+> parameter to control its agent step loop. GPT-5-mini is a reasoning model that
+> [does not support `stop` sequences](https://community.openai.com/t/why-doesnt-gpt-5-1-support-stop-sequences/1366800),
+> causing smolagents to consume more tokens and steps than necessary. This
+> explains the ~4-5x higher latency and ~13x higher token usage compared to other
+> frameworks, even though answer quality is strong. See
+> [smolagents #1893](https://github.com/huggingface/smolagents/issues/1893).
+
 ## Scenario-Specific Metrics
 
 | Metric | Pydantic AI | LangGraph | smolagents |

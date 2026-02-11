@@ -56,15 +56,18 @@ async def judge_answer(
         f"RETRIEVED SOURCES: {', '.join(context_sources) if context_sources else 'None'}"
     )
 
-    response = await client.chat.completions.create(
-        model=model,
-        messages=[
+    kwargs: dict = {
+        "model": model,
+        "messages": [
             {"role": "system", "content": JUDGE_SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ],
-        response_format={"type": "json_object"},
-        temperature=0.0,
-    )
+        "response_format": {"type": "json_object"},
+    }
+    # gpt-5-mini does not support temperature override
+    if "gpt-5" not in model:
+        kwargs["temperature"] = 0.0
+    response = await client.chat.completions.create(**kwargs)
     data = json.loads(response.choices[0].message.content)
     return JudgeResult(
         correctness=data["correctness"],

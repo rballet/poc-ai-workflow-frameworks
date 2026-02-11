@@ -115,16 +115,19 @@ class LangGraphRAG:
     def _build_graph(self):
         """Build native LangGraph tool-calling loop."""
         runtime = self._runtime
-        llm = ChatOpenAI(model=self._model, temperature=0)
+        llm_kwargs: dict = {"model": self._model}
+        if "gpt-5" not in self._model:
+            llm_kwargs["temperature"] = 0
+        llm = ChatOpenAI(**llm_kwargs)
 
         @tool("run_sql")
         def run_sql(query: str) -> str:
-            """Execute read-only SQL (SELECT/WITH/PRAGMA) against the scenario database."""
+            """Execute read-only SQL (SELECT/WITH/PRAGMA) against the scenario SQLite database."""
             return runtime.run_sql(query)
 
         @tool("lookup_doc")
         def lookup_doc(query: str) -> str:
-            """Search scenario policy/process docs for relevant evidence."""
+            """Search scenario policy/process documents for relevant evidence."""
             return runtime.lookup_doc(query)
 
         llm_with_tools = llm.bind_tools([run_sql, lookup_doc])

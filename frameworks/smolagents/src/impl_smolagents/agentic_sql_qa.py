@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import threading
 import time
 from functools import partial
 from typing import Any
@@ -10,7 +11,9 @@ from typing import Any
 from smolagents import LiteLLMModel, Tool, ToolCallingAgent
 
 from shared.agentic_sql import (
+    LOOKUP_DOC_DESC,
     PROMPT_VERSION,
+    RUN_SQL_DESC,
     AgenticSQLRuntime,
     build_task_prompt,
     get_system_prompt,
@@ -27,9 +30,7 @@ class SQLTool(Tool):
     """Execute read-only SQL on the shared scenario runtime."""
 
     name = "run_sql"
-    description = (
-        "Execute read-only SQL (SELECT/WITH/PRAGMA) on the scenario SQLite database."
-    )
+    description = RUN_SQL_DESC
     inputs = {
         "query": {"type": "string", "description": "SQL query to execute"},
     }
@@ -47,7 +48,7 @@ class DocTool(Tool):
     """Search policy/process docs on the shared scenario runtime."""
 
     name = "lookup_doc"
-    description = "Search scenario policy/process documents for relevant evidence."
+    description = LOOKUP_DOC_DESC
     inputs = {
         "query": {"type": "string", "description": "Search query"},
     }
@@ -157,15 +158,53 @@ class SmolAgentsRAG:
 
         task = build_task_prompt(question, self._max_tool_calls)
 
+        # Use a timer to interrupt the agent if it exceeds the timeout.
+        # asyncio.wait_for() cannot cancel threads spawned by to_thread(),
+        # so we use smolagents' native interrupt_switch mechanism.
+        timeout_seconds = 120.0
+        timer = threading.Timer(timeout_seconds, agent.interrupt)
+        timer.start()
+
         start = time.perf_counter()
-        run_result = await asyncio.to_thread(
-            partial(
-                agent.run,
-                task,
-                max_steps=self._max_steps,
-                return_full_result=True,
+        try:
+            run_result = await asyncio.to_thread(
+                partial(
+                    agent.run,
+                    task,
+                    max_steps=self._max_steps,
+                    return_full_result=True,
+                )
             )
-        )
+        except Exception:
+            elapsed = time.perf_counter() - start
+            trace = self._runtime.tool_trace()
+            return RunResult(
+                answer=Answer(
+                    question_id="",
+                    text="Agent timed out or was interrupted before producing an answer.",
+                    sources_used=self._runtime.sources_used(),
+                    metadata={
+                        "mode": self._mode,
+                        "prompt_version": PROMPT_VERSION,
+                        "prompt_hash": get_system_prompt_hash(),
+                        "agent_state": "interrupted",
+                        "planning_interval": self._planning_interval,
+                        "tool_trace": trace,
+                        "tool_calls": self._runtime.tool_calls(),
+                        "query_trace": [str(item.get("input", "")) for item in trace],
+                    },
+                ),
+                usage=UsageStats(
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    total_tokens=0,
+                    latency_seconds=elapsed,
+                    model_name=self._model_id,
+                ),
+            )
+        finally:
+            timer.cancel()
+
         elapsed = time.perf_counter() - start
 
         token_usage = run_result.token_usage

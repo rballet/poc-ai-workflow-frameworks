@@ -42,6 +42,32 @@ SECURITY_TABLES = {
     "incidents", "incident_timeline",
 }
 
+# Canonical tool descriptions — used by all framework implementations to
+# ensure the LLM receives identical guidance regardless of framework.
+QUERY_INFRASTRUCTURE_DESC = (
+    "Execute read-only SQL (SELECT/WITH/PRAGMA) on infrastructure tables: "
+    "clusters, services, dependencies, recent_deploys, incidents, incident_timeline."
+)
+QUERY_SECURITY_DESC = (
+    "Execute read-only SQL (SELECT/WITH/PRAGMA) on security tables: "
+    "vulnerability_scans, access_logs, firewall_rules, incidents, incident_timeline."
+)
+LOOKUP_RUNBOOK_DESC = (
+    "Search operational runbooks and policy documents for relevant evidence."
+)
+CONSULT_INFRASTRUCTURE_DESC = (
+    "Consult the infrastructure specialist. Ask questions about servers, "
+    "clusters, deployments, service dependencies, and infrastructure state."
+)
+CONSULT_SECURITY_DESC = (
+    "Consult the security specialist. Ask questions about vulnerabilities, "
+    "access logs, firewall rules, and security compliance."
+)
+CONSULT_RUNBOOK_DESC = (
+    "Consult the runbook specialist. Ask questions about change management "
+    "policies, incident response procedures, SLAs, and compliance rules."
+)
+
 COORDINATOR_PROMPT = (
     "You are an incident-response coordinator at NimbusOps.\n"
     "You have access to three specialist tools:\n"

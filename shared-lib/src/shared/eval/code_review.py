@@ -81,15 +81,18 @@ async def review_code(
         f"SOURCE CODE:\n```python\n{source_code}\n```"
     )
 
-    response = await client.chat.completions.create(
-        model=model,
-        messages=[
+    kwargs: dict = {
+        "model": model,
+        "messages": [
             {"role": "system", "content": CODE_REVIEW_SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ],
-        response_format={"type": "json_object"},
-        temperature=0.0,
-    )
+        "response_format": {"type": "json_object"},
+    }
+    # gpt-5-mini does not support temperature override
+    if "gpt-5" not in model:
+        kwargs["temperature"] = 0.0
+    response = await client.chat.completions.create(**kwargs)
     data = json.loads(response.choices[0].message.content)
 
     scores = [

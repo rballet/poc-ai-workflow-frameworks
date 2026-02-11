@@ -15,7 +15,13 @@ from pydantic_ai import Agent, RunContext
 
 from shared.interface import Answer, Document, RunResult, UsageStats
 from shared.multi_agent_coordination import (
+    CONSULT_INFRASTRUCTURE_DESC,
+    CONSULT_RUNBOOK_DESC,
+    CONSULT_SECURITY_DESC,
+    LOOKUP_RUNBOOK_DESC,
     PROMPT_VERSION,
+    QUERY_INFRASTRUCTURE_DESC,
+    QUERY_SECURITY_DESC,
     MultiAgentRuntime,
     build_task_prompt,
     get_coordinator_prompt,
@@ -106,84 +112,94 @@ class PydanticAIRAG:
         """Create three specialist agents, each with one domain tool."""
 
         # --- Infrastructure specialist ---
-        async def infra_query(ctx: RunContext[SpecialistDeps], query: str) -> str:
-            """Execute read-only SQL on infrastructure tables."""
-            return ctx.deps.runtime.query_infrastructure(query)
-
-        infra_agent = Agent(
+        infra_agent: Agent[SpecialistDeps, str] = Agent(
             self._model,
             output_type=str,
             instructions=get_specialist_prompt("infrastructure"),
             deps_type=SpecialistDeps,
-            tools=[infra_query],
         )
 
-        # --- Security specialist ---
-        async def security_query(ctx: RunContext[SpecialistDeps], query: str) -> str:
-            """Execute read-only SQL on security tables."""
-            return ctx.deps.runtime.query_security(query)
+        @infra_agent.tool(description=QUERY_INFRASTRUCTURE_DESC)
+        async def infra_query(ctx: RunContext[SpecialistDeps], query: str) -> str:
+            """Execute read-only SQL on infrastructure tables."""
+            return ctx.deps.runtime.query_infrastructure(query)
 
-        security_agent = Agent(
+        # --- Security specialist ---
+        security_agent: Agent[SpecialistDeps, str] = Agent(
             self._model,
             output_type=str,
             instructions=get_specialist_prompt("security"),
             deps_type=SpecialistDeps,
-            tools=[security_query],
         )
 
-        # --- Runbook specialist ---
-        async def runbook_search(ctx: RunContext[SpecialistDeps], query: str) -> str:
-            """Search operational runbooks and policy documents."""
-            return ctx.deps.runtime.lookup_runbook(query)
+        @security_agent.tool(description=QUERY_SECURITY_DESC)
+        async def security_query(ctx: RunContext[SpecialistDeps], query: str) -> str:
+            """Execute read-only SQL on security tables."""
+            return ctx.deps.runtime.query_security(query)
 
-        runbook_agent = Agent(
+        # --- Runbook specialist ---
+        runbook_agent: Agent[SpecialistDeps, str] = Agent(
             self._model,
             output_type=str,
             instructions=get_specialist_prompt("runbook"),
             deps_type=SpecialistDeps,
-            tools=[runbook_search],
         )
+
+        @runbook_agent.tool(description=LOOKUP_RUNBOOK_DESC)
+        async def runbook_search(ctx: RunContext[SpecialistDeps], query: str) -> str:
+            """Search operational runbooks and policy documents."""
+            return ctx.deps.runtime.lookup_runbook(query)
 
         return infra_agent, security_agent, runbook_agent
 
     def _build_baseline_coordinator(self) -> Agent[CoordinationDeps, str]:
         """Single agent with all three tools (baseline mode)."""
+        coordinator: Agent[CoordinationDeps, str] = Agent(
+            self._model,
+            output_type=str,
+            instructions=get_coordinator_prompt(),
+            deps_type=CoordinationDeps,
+        )
 
+        @coordinator.tool(description=QUERY_INFRASTRUCTURE_DESC)
         async def query_infrastructure(
             ctx: RunContext[CoordinationDeps], query: str
         ) -> str:
             """Execute read-only SQL on infrastructure tables."""
             return ctx.deps.runtime.query_infrastructure(query)
 
+        @coordinator.tool(description=QUERY_SECURITY_DESC)
         async def query_security(
             ctx: RunContext[CoordinationDeps], query: str
         ) -> str:
             """Execute read-only SQL on security tables."""
             return ctx.deps.runtime.query_security(query)
 
+        @coordinator.tool(description=LOOKUP_RUNBOOK_DESC)
         async def lookup_runbook(
             ctx: RunContext[CoordinationDeps], query: str
         ) -> str:
             """Search operational runbooks and policy documents."""
             return ctx.deps.runtime.lookup_runbook(query)
 
-        return Agent(
-            self._model,
-            output_type=str,
-            instructions=get_coordinator_prompt(),
-            deps_type=CoordinationDeps,
-            tools=[query_infrastructure, query_security, lookup_runbook],
-        )
+        return coordinator
 
     def _build_capability_coordinator(
         self,
     ) -> Agent[CoordinationDeps, str]:
         """Coordinator agent that delegates to specialist agents (capability mode)."""
+        coordinator: Agent[CoordinationDeps, str] = Agent(
+            self._model,
+            output_type=str,
+            instructions=get_coordinator_prompt(),
+            deps_type=CoordinationDeps,
+        )
 
+        @coordinator.tool(description=CONSULT_INFRASTRUCTURE_DESC)
         async def consult_infrastructure(
             ctx: RunContext[CoordinationDeps], question: str
         ) -> str:
-            """Consult the infrastructure specialist for server, cluster, deploy, and dependency information."""
+            """Consult the infrastructure specialist."""
             agent = ctx.deps.infra_agent
             if agent is None:
                 return ctx.deps.runtime.query_infrastructure(question)
@@ -195,10 +211,11 @@ class PydanticAIRAG:
             ctx.deps.sub_completion_tokens += usage.output_tokens or 0
             return result.output
 
+        @coordinator.tool(description=CONSULT_SECURITY_DESC)
         async def consult_security(
             ctx: RunContext[CoordinationDeps], question: str
         ) -> str:
-            """Consult the security specialist for vulnerability, access log, and firewall information."""
+            """Consult the security specialist."""
             agent = ctx.deps.security_agent
             if agent is None:
                 return ctx.deps.runtime.query_security(question)
@@ -210,10 +227,11 @@ class PydanticAIRAG:
             ctx.deps.sub_completion_tokens += usage.output_tokens or 0
             return result.output
 
+        @coordinator.tool(description=CONSULT_RUNBOOK_DESC)
         async def consult_runbook(
             ctx: RunContext[CoordinationDeps], question: str
         ) -> str:
-            """Consult the runbook specialist for policy, procedure, and compliance information."""
+            """Consult the runbook specialist."""
             agent = ctx.deps.runbook_agent
             if agent is None:
                 return ctx.deps.runtime.lookup_runbook(question)
@@ -225,13 +243,7 @@ class PydanticAIRAG:
             ctx.deps.sub_completion_tokens += usage.output_tokens or 0
             return result.output
 
-        return Agent(
-            self._model,
-            output_type=str,
-            instructions=get_coordinator_prompt(),
-            deps_type=CoordinationDeps,
-            tools=[consult_infrastructure, consult_security, consult_runbook],
-        )
+        return coordinator
 
     def _ensure_coordinator(self) -> Agent[CoordinationDeps, str]:
         if self._coordinator is not None:

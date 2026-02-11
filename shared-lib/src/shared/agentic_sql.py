@@ -26,6 +26,15 @@ CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
 TOP_K = 4
 PROMPT_VERSION = "agentic_sql.v2"
+# Canonical tool descriptions — used by all framework implementations to
+# ensure the LLM receives identical guidance regardless of framework.
+RUN_SQL_DESC = (
+    "Execute read-only SQL (SELECT/WITH/PRAGMA) against the scenario SQLite database."
+)
+LOOKUP_DOC_DESC = (
+    "Search scenario policy/process documents for relevant evidence."
+)
+
 SYSTEM_PROMPT = (
     "You are a tool-using analyst for customer support operations.\n"
     "Answer only from tool evidence. Do not invent facts.\n\n"

@@ -1,6 +1,6 @@
 # Framework Comparison Report
 
-Generated: 2026-02-11 18:02 UTC
+Generated: 2026-02-11 21:39 UTC
 Scenario: agentic_sql_qa
 Scenario Type: agentic_tool_qa
 Mode: capability
@@ -11,14 +11,22 @@ Questions: 8
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Avg Latency (s) | 21.11 | 23.59 | 232.01 |
-| Total Tokens | 68,007 | 75,505 | 544,999 |
-| Est. Cost (USD) | $0.0276 | $0.0298 | $0.3178 |
-| Avg Correctness (1-5) | 4.8 | 4.5 | 4.5 |
-| Avg Completeness (1-5) | 4.9 | 4.4 | 4.4 |
-| Avg Faithfulness (1-5) | 5.0 | 4.8 | 5.0 |
-| Avg Retrieval Precision | 0.84 | 0.86 | 0.80 |
-| Avg Retrieval Recall | 0.93 | 0.95 | 0.98 |
+| Avg Latency (s) | 17.91 | 16.72 | 112.47 |
+| Total Tokens | 71,045 | 74,547 | 45,895 |
+| Est. Cost (USD) | $0.0281 | $0.0274 | $0.0299 |
+| Avg Correctness (1-5) | 5.0 | 4.8 | 1.2 |
+| Avg Completeness (1-5) | 4.9 | 4.5 | 1.2 |
+| Avg Faithfulness (1-5) | 5.0 | 4.8 | 1.2 |
+| Avg Retrieval Precision | 0.85 | 0.85 | 0.15 |
+| Avg Retrieval Recall | 0.96 | 0.91 | 0.25 |
+
+> **Note on smolagents performance:** smolagents relies on the `stop` parameter
+> to control its agent step loop. OpenAI's GPT-5 family (including gpt-5-mini)
+> are reasoning models that [do not support `stop` sequences](https://community.openai.com/t/why-doesnt-gpt-5-1-support-stop-sequences/1366800).
+> This causes smolagents to use steps less efficiently, leading to frequent
+> `max_steps` exhaustion, timeouts, and degraded answer quality. This is a known
+> framework-model incompatibility ([smolagents #1893](https://github.com/huggingface/smolagents/issues/1893)),
+> not a reflection of smolagents' capability with compatible models (e.g. gpt-4o-mini).
 
 ## Derived Scorecard (0-100)
 
@@ -26,56 +34,56 @@ These derived scores are computed from existing metrics and shown as decision ai
 
 | Axis | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Capability | 84.8 | 60.2 | 75.2 |
-| Efficiency | 33.3 | 33.0 | 0.0 |
-| Developer Experience | 96.5 | 44.5 | 89.9 |
+| Capability | 68.5 | 54.6 | 6.2 |
+| Efficiency | 23.6 | 26.7 | 6.7 |
+| Developer Experience | 92.8 | 40.2 | 78.7 |
 
 ## Runtime Distribution
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Latency p50 (s) | 16.37 | 15.00 | 179.59 |
-| Latency p95 (s) | 39.45 | 55.62 | 433.47 |
+| Latency p50 (s) | 17.25 | 14.40 | 120.00 |
+| Latency p95 (s) | 30.28 | 32.33 | 120.00 |
 
 ## Scenario-Specific Metrics
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Branching Avg Grounded Hop Coverage | 0.750 | 0.583 | 0.750 |
-| Branching Avg Hop Coverage | 0.917 | 0.667 | 0.833 |
-| Branching Avg Tool Coverage | 1 | 1 | 1 |
+| Branching Avg Grounded Hop Coverage | 0.750 | 0.500 | 0 |
+| Branching Avg Hop Coverage | 0.750 | 0.500 | 0 |
+| Branching Avg Tool Coverage | 0.875 | 0.875 | 0 |
 | Branching Questions | 4 | 4 | 4 |
-| Branching Success Avg | 0.375 | 0.125 | 0.250 |
-| Branching Success Rate | 0.750 | 0.250 | 0.500 |
-| Easy Avg Hop Coverage | 1 | 1 | 1 |
+| Branching Success Avg | 0.125 | 0.125 | 0 |
+| Branching Success Rate | 0.250 | 0.250 | 0 |
+| Easy Avg Hop Coverage | 1 | 1 | 0.500 |
 | Easy Questions | 4 | 4 | 4 |
-| Grounded Hop Coverage Avg | 0.875 | 0.792 | 0.875 |
-| Has Tool Trace Avg | 1 | 1 | 1 |
-| Hop Coverage Avg | 0.958 | 0.833 | 0.917 |
+| Grounded Hop Coverage Avg | 0.875 | 0.750 | 0.250 |
+| Has Tool Trace Avg | 1 | 1 | 0.250 |
+| Hop Coverage Avg | 0.875 | 0.750 | 0.250 |
 | Is Branching Avg | 0.500 | 0.500 | 0.500 |
 | Is Easy Avg | 0.500 | 0.500 | 0.500 |
-| Matched Hops Avg | 1.875 | 1.500 | 1.750 |
-| Matched Tools Avg | 1.500 | 1.500 | 1.500 |
+| Matched Hops Avg | 1.625 | 1.250 | 0.250 |
+| Matched Tools Avg | 1.375 | 1.375 | 0.250 |
 | Required Hops Avg | 2 | 2 | 2 |
 | Required Tools Avg | 1.500 | 1.500 | 1.500 |
-| Tool Calls Reported Avg | 5.750 | 6 | 5.875 |
-| Tool Coverage Avg | 1 | 1 | 1 |
-| Tool Trace Rate | 1 | 1 | 1 |
+| Tool Calls Reported Avg | 5.875 | 6.125 | 1.250 |
+| Tool Coverage Avg | 0.938 | 0.938 | 0.250 |
+| Tool Trace Rate | 1 | 1 | 0.250 |
 
 ## Code Quality — Static Metrics
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Source Lines (SLOC) | 131 | 174 | 160 |
+| Source Lines (SLOC) | 132 | 177 | 169 |
 | Comment Ratio | 0% | 0% | 0% |
-| Avg Cyclomatic Complexity | 2.2 | 3.2 | 2.2 |
+| Avg Cyclomatic Complexity | 2.2 | 3.3 | 2.4 |
 | Max Cyclomatic Complexity | 6 | 10 | 8 |
 | Complexity Grade | A | A | A |
-| Maintainability Index | 40.3 | 33.5 | 38.6 |
+| Maintainability Index | 40.0 | 32.8 | 36.6 |
 | Maintainability Grade | A | A | A |
-| Halstead Volume | 175 | 226 | 141 |
-| Halstead Difficulty | 3.8 | 5.0 | 4.4 |
-| Halstead Bugs (est.) | 0.06 | 0.08 | 0.05 |
+| Halstead Volume | 175 | 247 | 204 |
+| Halstead Difficulty | 3.8 | 5.5 | 5.3 |
+| Halstead Bugs (est.) | 0.06 | 0.08 | 0.07 |
 | Total Imports | 8 | 11 | 9 |
 | Framework Imports | 1 | 5 | 1 |
 | Classes | 2 | 1 | 3 |
@@ -86,14 +94,14 @@ These derived scores are computed from existing metrics and shown as decision ai
 
 | Criterion | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Readability | 4 | 4 | 4 |
-| Idiomatic Usage | 5 | 5 | 5 |
-| Error Handling | 4 | 4 | 4 |
+| Readability | 4 | 4 | 5 |
+| Idiomatic Usage | 4 | 4 | 4 |
+| Error Handling | 3 | 2 | 3 |
 | Extensibility | 4 | 4 | 4 |
-| Testability | 4 | 4 | 4 |
-| Documentation | 4 | 4 | 4 |
-| Abstraction | 5 | 5 | 5 |
-| **Average** | 4.3 | 4.3 | 4.3 |
+| Testability | 3 | 3 | 3 |
+| Documentation | 3 | 3 | 4 |
+| Abstraction | 4 | 4 | 4 |
+| **Average** | 3.6 | 3.4 | 3.9 |
 
 ## Per-Question Results
 
@@ -101,8 +109,8 @@ These derived scores are computed from existing metrics and shown as decision ai
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Latency (s) | 7.15 | 6.98 | 77.31 |
-| Tokens | 2,462 | 2,857 | 20,329 |
+| Latency (s) | 8.52 | 6.51 | 94.56 |
+| Tokens | 2,977 | 2,856 | 24,071 |
 | Correctness | 5 | 5 | 5 |
 | Completeness | 5 | 5 | 5 |
 | Faithfulness | 5 | 5 | 5 |
@@ -118,227 +126,206 @@ These derived scores are computed from existing metrics and shown as decision ai
 | Matched Tools | 1 | 1 | 1 |
 | Required Hops | 1 | 1 | 1 |
 | Required Tools | 1 | 1 | 1 |
-| Tool Calls Reported | 3 | 4 | 3 |
+| Tool Calls Reported | 4 | 4 | 3 |
 | Tool Coverage | 1 | 1 | 1 |
 
 **Answers:**
 
-- **Pydantic AI**: Acme Health is on the Enterprise tier and operates in the us-west region (customer_id C003).
-- **LangGraph**: Acme Health is on the Enterprise tier and its operating region is us-west.
-- **smolagents**: Acme Health is on the Enterprise account tier and operates in the us-west region (customers table — customer_id C003).
+- **Pydantic AI**: Acme Health is on the "Enterprise" account tier and operates in the "us-west" region (from the customers table).
+- **LangGraph**: Acme Health is an Enterprise-tier account operating in the us-west region.
+- **smolagents**: Acme Health is in the “Enterprise” account tier and operates in the “us-west” region.
+
+Evidence: customers table row for customer_id = C003 (name = 'Acme Health') returned tier = 'Enterprise' and region = 'us-west' (query: SELECT customer_id, name, tier, region, owner_team FROM customers WHERE name ...
 
 ### q2: Are weather-related shipment delays eligible for shipping credits?
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Latency (s) | 9.30 | 6.66 | 184.66 |
-| Tokens | 1,381 | 1,298 | 50,579 |
-| Correctness | 5 | 5 | 5 |
-| Completeness | 5 | 4 | 5 |
-| Faithfulness | 5 | 5 | 5 |
-| Retrieval Prec | 0.50 | 0.50 | 0.50 |
-| Retrieval Recall | 1.00 | 1.00 | 1.00 |
+| Latency (s) | 7.31 | 7.53 | 120.00 |
+| Tokens | 1,415 | 1,330 | 0 |
+| Correctness | 5 | 5 | 0 |
+| Completeness | 5 | 5 | 0 |
+| Faithfulness | 5 | 5 | 0 |
+| Retrieval Prec | 0.50 | 0.50 | 0.00 |
+| Retrieval Recall | 1.00 | 1.00 | 0.00 |
 | Branching Success | 0 | 0 | 0 |
-| Grounded Hop Coverage | 1 | 1 | 1 |
-| Has Tool Trace | 1 | 1 | 1 |
-| Hop Coverage | 1 | 1 | 1 |
+| Grounded Hop Coverage | 1 | 1 | 0 |
+| Has Tool Trace | 1 | 1 | 0 |
+| Hop Coverage | 1 | 1 | 0 |
 | Is Branching | 0 | 0 | 0 |
 | Is Easy | 1 | 1 | 1 |
-| Matched Hops | 1 | 1 | 1 |
-| Matched Tools | 1 | 1 | 1 |
+| Matched Hops | 1 | 1 | 0 |
+| Matched Tools | 1 | 1 | 0 |
 | Required Hops | 1 | 1 | 1 |
 | Required Tools | 1 | 1 | 1 |
-| Tool Calls Reported | 1 | 1 | 5 |
-| Tool Coverage | 1 | 1 | 1 |
+| Tool Calls Reported | 1 | 1 | 0 |
+| Tool Coverage | 1 | 1 | 0 |
 
 **Answers:**
 
-- **Pydantic AI**: No. Per the Shipping Credit Policy, weather-related delays are explicitly excluded from shipping credits.
-
-Relevant policy points (support_policies.md):
-- An order is eligible for a shipping credit only when all are true: status = delivered; delivery delay ≥ 24 hours; delay reason is NOT weather, cu...
-- **LangGraph**: No. Per the Shipping Credit Policy, weather-related delays are excluded.
-
-Eligibility requires all of the following:
-- Order status = delivered
-- Delivery delay ≥ 24 hours
-- Delay reason is NOT weather, customs hold, or force majeure
-
-(For reference, the policy also lists credit caps by account tier...
-- **smolagents**: Short answer: No — weather-related shipment delays are not eligible for shipping credits.
-
-Grounding (policy): The Shipping Credit Policy states: “An order is eligible for a shipping credit when all of the following are true: 1. Status is `delivered`. 2. Delivery delay is 24 hours or more. 3. Delay ...
+- **Pydantic AI**: No. Per the Shipping Credit Policy, delay reasons that are weather (as well as customs hold or force majeure) are explicitly excluded from shipping-credit eligibility. The policy requires a delivered status plus a delivery delay of 24+ hours and a delay reason that is not weather. (support_policies....
+- **LangGraph**: No. Per the Shipping Credit Policy: an order is eligible for a shipping credit only if (1) status is delivered, (2) delivery delay is 24 hours or more, and (3) delay reason is not weather, customs hold, or force majeure. (support_policies.md)
+- **smolagents**: Query timed out before producing an answer.
 
 ### q3: How many unresolved P1 incidents are currently open?
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Latency (s) | 10.47 | 7.66 | 113.75 |
-| Tokens | 3,522 | 2,465 | 25,995 |
-| Correctness | 5 | 5 | 5 |
-| Completeness | 5 | 5 | 5 |
-| Faithfulness | 5 | 5 | 5 |
-| Retrieval Prec | 1.00 | 1.00 | 1.00 |
-| Retrieval Recall | 1.00 | 1.00 | 1.00 |
+| Latency (s) | 14.66 | 4.95 | 120.00 |
+| Tokens | 3,536 | 2,423 | 0 |
+| Correctness | 5 | 5 | 0 |
+| Completeness | 5 | 5 | 0 |
+| Faithfulness | 5 | 5 | 0 |
+| Retrieval Prec | 1.00 | 1.00 | 0.00 |
+| Retrieval Recall | 1.00 | 1.00 | 0.00 |
 | Branching Success | 0 | 0 | 0 |
-| Grounded Hop Coverage | 1 | 1 | 1 |
-| Has Tool Trace | 1 | 1 | 1 |
-| Hop Coverage | 1 | 1 | 1 |
+| Grounded Hop Coverage | 1 | 1 | 0 |
+| Has Tool Trace | 1 | 1 | 0 |
+| Hop Coverage | 1 | 1 | 0 |
 | Is Branching | 0 | 0 | 0 |
 | Is Easy | 1 | 1 | 1 |
-| Matched Hops | 1 | 1 | 1 |
-| Matched Tools | 1 | 1 | 1 |
+| Matched Hops | 1 | 1 | 0 |
+| Matched Tools | 1 | 1 | 0 |
 | Required Hops | 1 | 1 | 1 |
 | Required Tools | 1 | 1 | 1 |
-| Tool Calls Reported | 3 | 3 | 3 |
-| Tool Coverage | 1 | 1 | 1 |
+| Tool Calls Reported | 3 | 3 | 0 |
+| Tool Coverage | 1 | 1 | 0 |
 
 **Answers:**
 
-- **Pydantic AI**: There are 2 unresolved P1 incidents (severity = 'P1' and resolved_at IS NULL).
-- **LangGraph**: There are 2 unresolved P1 incidents currently open.
-- **smolagents**: There are 2 unresolved P1 incidents currently open.
+- **Pydantic AI**: There are 2 unresolved P1 incidents currently open.
 
-Query used: SELECT COUNT(*) AS unresolved_p1_count FROM incidents WHERE severity = 'P1' AND resolved_at IS NULL;
-Definition used: an incident is considered unresolved/open if incidents.resolved_at IS NULL.
+Query used: SELECT COUNT(*) AS open_p1 FROM incidents WHERE severity = 'P1' AND resolved_at IS NULL; Result: open_p1 = 2.
+- **LangGraph**: There are 2 unresolved P1 incidents currently open (severity = "P1" and resolved_at IS NULL).
+- **smolagents**: Query timed out before producing an answer.
 
 ### q4: Can order ORD-104 receive a shipping credit, and what is the maximum amount?
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Latency (s) | 22.28 | 22.34 | 174.53 |
-| Tokens | 12,609 | 11,696 | 50,453 |
-| Correctness | 5 | 5 | 5 |
-| Completeness | 5 | 5 | 5 |
-| Faithfulness | 5 | 5 | 5 |
-| Retrieval Prec | 0.80 | 0.80 | 0.80 |
-| Retrieval Recall | 1.00 | 1.00 | 1.00 |
+| Latency (s) | 19.83 | 21.27 | 120.00 |
+| Tokens | 11,205 | 13,141 | 0 |
+| Correctness | 5 | 5 | 0 |
+| Completeness | 5 | 5 | 0 |
+| Faithfulness | 5 | 5 | 0 |
+| Retrieval Prec | 0.80 | 0.80 | 0.00 |
+| Retrieval Recall | 1.00 | 1.00 | 0.00 |
 | Branching Success | 0 | 0 | 0 |
-| Grounded Hop Coverage | 0.667 | 0.667 | 0.667 |
-| Has Tool Trace | 1 | 1 | 1 |
-| Hop Coverage | 0.667 | 0.667 | 0.667 |
+| Grounded Hop Coverage | 0.667 | 0.667 | 0 |
+| Has Tool Trace | 1 | 1 | 0 |
+| Hop Coverage | 0.667 | 0.667 | 0 |
 | Is Branching | 1 | 1 | 1 |
 | Is Easy | 0 | 0 | 0 |
-| Matched Hops | 2 | 2 | 2 |
-| Matched Tools | 2 | 2 | 2 |
+| Matched Hops | 2 | 2 | 0 |
+| Matched Tools | 2 | 2 | 0 |
 | Required Hops | 3 | 3 | 3 |
 | Required Tools | 2 | 2 | 2 |
-| Tool Calls Reported | 9 | 8 | 5 |
-| Tool Coverage | 1 | 1 | 1 |
+| Tool Calls Reported | 7 | 9 | 0 |
+| Tool Coverage | 1 | 1 | 0 |
 
 **Answers:**
 
-- **Pydantic AI**: Yes. ORD-104 is eligible for a shipping credit.
+- **Pydantic AI**: Yes — ORD-104 is eligible for a shipping credit. Evidence:
+- orders: ORD-104 status = "delivered" and total_usd = 7000.0.
+- shipments: ORD-104 delay_hours = 30 and delay_reason = "carrier_misroute".
+- customers: C003 (order's customer) tier = "Enterprise".
+- policy (Shipping Credit Policy): eligibil...
+- **LangGraph**: Yes — ORD-104 is eligible for a shipping credit.
 
 Evidence:
-- Order ORD-104: status = "delivered", total_usd = 7000.00 (orders table).
-- Shipment ORD-104: delay_hours = 30, delay_reason = "carrier_misroute" (shipments table). Delay >= 24 and reason is not excluded.
-- Customer C003 (owner of ORD-104) ...
-- **LangGraph**: Yes.
-
-Evidence:
-- Order ORD-104 status = delivered (orders table).
-- Delivery delay = 30 hours and delay_reason = carrier_misroute (shipments table).
-- Shipping-credit eligibility requires: delivered, delay ≥ 24 hours, and reason not weather/customs/force majeure — carrier_misroute is allowed (suppo...
-- **smolagents**: Yes — ORD-104 is eligible for a shipping credit. Evidence and calculation:
-
-Evidence from database and policy:
-- orders row (ORD-104): status = delivered; total_usd = 7000.00.
-- shipments row (ORD-104): delay_hours = 30; delay_reason = carrier_misroute (delivered_at present).
-- customers row (C003):...
+- orders row: status = "delivered", total_usd = 7000.00 (orders table).
+- shipments row: delay_hours = 30, delay_reason = "carrier_misroute" (shipments table). 30 ≥ 24 and carrier_misroute is not an excluded reason.
+- customer row: tier = "...
+- **smolagents**: Query timed out before producing an answer.
 
 ### q5: Should CASE-778 be auto-escalated, and which team should own it?
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Latency (s) | 37.04 | 55.21 | 392.65 |
-| Tokens | 17,926 | 19,443 | 120,320 |
-| Correctness | 3 | 5 | 5 |
-| Completeness | 4 | 5 | 5 |
-| Faithfulness | 5 | 5 | 5 |
-| Retrieval Prec | 0.75 | 0.83 | 0.71 |
-| Retrieval Recall | 0.60 | 1.00 | 1.00 |
-| Branching Success | 1 | 1 | 1 |
-| Grounded Hop Coverage | 0.667 | 1 | 1 |
-| Has Tool Trace | 1 | 1 | 1 |
-| Hop Coverage | 1 | 1 | 1 |
+| Latency (s) | 28.42 | 34.20 | 120.00 |
+| Tokens | 17,544 | 16,514 | 0 |
+| Correctness | 5 | 3 | 0 |
+| Completeness | 5 | 2 | 0 |
+| Faithfulness | 5 | 4 | 0 |
+| Retrieval Prec | 0.83 | 0.80 | 0.00 |
+| Retrieval Recall | 1.00 | 0.80 | 0.00 |
+| Branching Success | 0 | 0 | 0 |
+| Grounded Hop Coverage | 0.667 | 0 | 0 |
+| Has Tool Trace | 1 | 1 | 0 |
+| Hop Coverage | 0.667 | 0 | 0 |
 | Is Branching | 1 | 1 | 1 |
 | Is Easy | 0 | 0 | 0 |
-| Matched Hops | 3 | 3 | 3 |
-| Matched Tools | 2 | 2 | 2 |
+| Matched Hops | 2 | 0 | 0 |
+| Matched Tools | 2 | 2 | 0 |
 | Required Hops | 3 | 3 | 3 |
 | Required Tools | 2 | 2 | 2 |
-| Tool Calls Reported | 10 | 10 | 9 |
-| Tool Coverage | 1 | 1 | 1 |
+| Tool Calls Reported | 10 | 9 | 0 |
+| Tool Coverage | 1 | 1 | 0 |
 
 **Answers:**
 
-- **Pydantic AI**: Short answer
-- I cannot definitively say whether CASE-778 should have been auto‑escalated because I do not have the auto‑escalation policy/criteria in the available data.
-- Based on the case/incident data, I recommend technical ownership be assigned to Platform Reliability and customer/relationship ...
-- **LangGraph**: Short answer
-- Yes — CASE-778 should be auto‑escalated immediately.
-- Owning team: Platform Reliability (page the Platform Reliability on‑call: Nikhil Batra).
+- **Pydantic AI**: Yes — CASE-778 should be auto‑escalated.
 
-Why (evidence from the database + policy documents)
-- The order for this case (ORD-102) has an active unresolved P1 incident (INC-9001, seve...
-- **smolagents**: Decision: Yes — CASE-778 should be auto‑escalated immediately.
+Why (evidence):
+- CASE-778 is high priority, customer_waiting_hours = 26 (>24), and last_update_hours = 7 (>6) (support_cases table) — these meet the auto‑escalation triggers for Enterprise waiting >24h and high‑priority with no agent update >6h.
+- There is ...
+- **LangGraph**: Yes — CASE-778 should be auto‑escalated.
 
-Grounding (evidence):
-- support_cases CASE-778: priority = high; customer_waiting_hours = 26 (>24); last_update_hours = 7 (>6); status = open. (support_cases table)
-- customers C003: tier = Enterprise; owner_team = Strategic Accounts. (...
+Why (evidence):
+- Case data (support_cases): CASE-778 is priority = "high", customer_waiting_hours = 26, last_update_hours = 7. (support_cases table)
+- Customer data (customers): customer_id C003 (case owner) is tier = "Enterprise" and owner_team = "Strategi...
+- **smolagents**: Query timed out before producing an answer.
 
 ### q6: For order ORD-109, what customer-facing compensation should be offered?
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Latency (s) | 32.41 | 27.25 | 356.51 |
-| Tokens | 11,580 | 20,621 | 112,511 |
-| Correctness | 5 | 1 | 5 |
-| Completeness | 5 | 2 | 5 |
-| Faithfulness | 5 | 3 | 5 |
-| Retrieval Prec | 0.80 | 0.75 | 0.57 |
-| Retrieval Recall | 1.00 | 0.75 | 1.00 |
-| Branching Success | 1 | 0 | 1 |
-| Grounded Hop Coverage | 1 | 0.333 | 1 |
-| Has Tool Trace | 1 | 1 | 1 |
-| Hop Coverage | 1 | 0.333 | 1 |
+| Latency (s) | 26.42 | 24.60 | 120.00 |
+| Tokens | 14,490 | 19,555 | 0 |
+| Correctness | 5 | 5 | 0 |
+| Completeness | 5 | 5 | 0 |
+| Faithfulness | 5 | 5 | 0 |
+| Retrieval Prec | 0.67 | 0.67 | 0.00 |
+| Retrieval Recall | 1.00 | 1.00 | 0.00 |
+| Branching Success | 1 | 1 | 0 |
+| Grounded Hop Coverage | 1 | 1 | 0 |
+| Has Tool Trace | 1 | 1 | 0 |
+| Hop Coverage | 1 | 1 | 0 |
 | Is Branching | 1 | 1 | 1 |
 | Is Easy | 0 | 0 | 0 |
-| Matched Hops | 3 | 1 | 3 |
-| Matched Tools | 2 | 2 | 2 |
+| Matched Hops | 3 | 3 | 0 |
+| Matched Tools | 2 | 2 | 0 |
 | Required Hops | 3 | 3 | 3 |
 | Required Tools | 2 | 2 | 2 |
-| Tool Calls Reported | 7 | 10 | 9 |
-| Tool Coverage | 1 | 1 | 1 |
+| Tool Calls Reported | 9 | 10 | 0 |
+| Tool Coverage | 1 | 1 | 0 |
 
 **Answers:**
 
-- **Pydantic AI**: Evidence:
-- orders table: ORD-109 — status delivered, total_usd = $9,500 (orders).
-- customers table: C001 (Northwind Hospitals) — tier = Enterprise (customers).
-- incidents table: INC-9003 for ORD-109 — category = pick_pack_error on a delivered order (incidents).
-- support_policies.md: "pick_pack_e...
-- **LangGraph**: I can’t determine the customer-facing compensation from the data available — there’s no compensation policy or recorded credit/compensation entry in the database tables I can access.
+- **Pydantic AI**: Offer a goodwill credit of 8% of the order total = $760 to the customer.
 
-What I can confirm from the records:
-- Order: ORD-109 — total $9,500, delivered from WH-ATL on 2026-02-07.
-- Custome...
-- **smolagents**: Recommendation (grounded in DB + policy):
+Evidence and logic:
+- Order ORD-109: status = delivered, total_usd = $9,500 (orders table).
+- Shipment: delay_hours = 12 (shipments table) — below the 24‑hour threshold for shipping credits.
+- Incident: category = pick_pack_er...
+- **LangGraph**: Offer a goodwill credit of $760 to the customer.
 
-- Offer: a $760.00 goodwill credit to the customer (account credit or refund as appropriate).
-  - Rationale: Incident INC-9003 for ORD-109 is categorized as pick_pack_error (resolved). Policy (support_policies.md) prescribes a goodwill credit for delivered ...
+Rationale / evidence:
+- Policy: for pick_pack_error on delivered orders, offer a goodwill credit; Enterprise customers receive 8% of order total. (support_policies.md)
+- Order ORD-109: status = delivered, total_usd = $9,500. (orders table)
+- Customer...
+- **smolagents**: Query timed out before producing an answer.
 
 ### q7: Who is the current on-call engineer for the Commercial team?
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Latency (s) | 9.49 | 6.77 | 101.19 |
-| Tokens | 2,472 | 2,161 | 23,801 |
+| Latency (s) | 6.82 | 5.85 | 85.22 |
+| Tokens | 2,321 | 2,290 | 21,824 |
 | Correctness | 5 | 5 | 5 |
-| Completeness | 5 | 4 | 4 |
-| Faithfulness | 5 | 5 | 5 |
-| Retrieval Prec | 1.00 | 1.00 | 1.00 |
+| Completeness | 5 | 5 | 5 |
+| Faithfulness | 5 | 4 | 5 |
+| Retrieval Prec | 1.00 | 1.00 | 0.20 |
 | Retrieval Recall | 1.00 | 1.00 | 1.00 |
 | Branching Success | 0 | 0 | 0 |
 | Grounded Hop Coverage | 1 | 1 | 1 |
@@ -350,55 +337,49 @@ What I can confirm from the records:
 | Matched Tools | 1 | 1 | 1 |
 | Required Hops | 1 | 1 | 1 |
 | Required Tools | 1 | 1 | 1 |
-| Tool Calls Reported | 3 | 3 | 3 |
+| Tool Calls Reported | 3 | 3 | 7 |
 | Tool Coverage | 1 | 1 | 1 |
 
 **Answers:**
 
-- **Pydantic AI**: According to the oncall table, the Commercial team’s on-call engineers are:
-- Primary: Omar Santos
-- Secondary: Lina Hoffmann
+- **Pydantic AI**: The on-call primary for the Commercial team is Omar Santos. The on-call secondary is Lina Hoffmann. (Source: oncall table query.)
 - **LangGraph**: Primary on-call engineer for the Commercial team: Omar Santos.
-Secondary on-call engineer: Lina Hoffmann.
-- **smolagents**: The current on-call engineer for the Commercial team (primary) is Omar Santos. The secondary engineer is Lina Hoffmann. (Source: oncall table query.)
+Secondary (backup): Lina Hoffmann.
+- **smolagents**: The current on-call engineer for the Commercial team is Omar Santos (primary engineer). Source: oncall table row — team: Commercial; primary_engineer: Omar Santos; secondary_engineer: Lina Hoffmann.
 
 ### q8: Northwind Hospitals has an open issue on ORD-109. Should we wake the Sev1 commander now, or keep it with account support?
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Latency (s) | 40.74 | 55.84 | 455.46 |
-| Tokens | 16,055 | 14,964 | 141,011 |
-| Correctness | 5 | 5 | 1 |
-| Completeness | 5 | 5 | 1 |
-| Faithfulness | 5 | 5 | 5 |
-| Retrieval Prec | 0.83 | 1.00 | 0.83 |
-| Retrieval Recall | 0.83 | 0.83 | 0.83 |
-| Branching Success | 1 | 0 | 0 |
-| Grounded Hop Coverage | 0.667 | 0.333 | 0.333 |
-| Has Tool Trace | 1 | 1 | 1 |
-| Hop Coverage | 1 | 0.667 | 0.667 |
+| Latency (s) | 31.27 | 28.85 | 120.00 |
+| Tokens | 17,557 | 16,438 | 0 |
+| Correctness | 5 | 5 | 0 |
+| Completeness | 4 | 4 | 0 |
+| Faithfulness | 5 | 5 | 0 |
+| Retrieval Prec | 1.00 | 1.00 | 0.00 |
+| Retrieval Recall | 0.67 | 0.50 | 0.00 |
+| Branching Success | 0 | 0 | 0 |
+| Grounded Hop Coverage | 0.667 | 0.333 | 0 |
+| Has Tool Trace | 1 | 1 | 0 |
+| Hop Coverage | 0.667 | 0.333 | 0 |
 | Is Branching | 1 | 1 | 1 |
 | Is Easy | 0 | 0 | 0 |
-| Matched Hops | 3 | 2 | 2 |
-| Matched Tools | 2 | 2 | 2 |
+| Matched Hops | 2 | 1 | 0 |
+| Matched Tools | 1 | 1 | 0 |
 | Required Hops | 3 | 3 | 3 |
 | Required Tools | 2 | 2 | 2 |
-| Tool Calls Reported | 10 | 9 | 10 |
-| Tool Coverage | 1 | 1 | 1 |
+| Tool Calls Reported | 10 | 10 | 0 |
+| Tool Coverage | 0.500 | 0.500 | 0 |
 
 **Answers:**
 
-- **Pydantic AI**: Recommendation: Keep the issue with Account Support (do not wake the Sev1 commander).
+- **Pydantic AI**: Short answer: Keep it with account support — do not wake the Sev1 commander now.
 
-Evidence:
-- Support case: CASE-779 for ORD-109 is open, priority = "medium", customer_waiting_hours = 10, last_update_hours = 2 (opened_at 2026-02-08T12:40:00Z). (support_cases)
-- Customer: Northwind Hospitals is ...
-- **LangGraph**: Recommendation: Keep it with account support (do not wake the Sev1 commander now).
-
-Evidence:
-- support_cases: CASE-779 (ORD-109) — priority = medium, status = open, customer_waiting_hours = 10, last_update_hours = 2.  
-- incidents: INC-9003 for ORD-109 — severity = P2 and resolved_at = 2026-02-08T1...
-- **smolagents**: Recommendation: Wake the Sev1 commander now.
-
-Why (grounded evidence)
-- Policy: escalation_matrix.md states "Wake Sev1 commander only when at least one condition is true: 1. Active unresolved P1 incident. 2. Cascading failures across multiple customers. 3. Explicit compliance/legal trigger." support...
+Grounding from the data:
+- incidents: INC-9003 for order ORD-109 has severity = "P2" and resolved_at = "2026-02-08T12:30:00Z" (i.e., it was not a P1/Sev1 and is marked resolved).  
+- customers: Northwind Hospitals is E...
+- **LangGraph**: Findings from our records:
+- Order ORD-109 has one incident (INC-9003) with severity = P2. It was opened 2026-02-08T11:00:00Z and shows resolved_at = 2026-02-08T12:30:00Z.
+- Customer for ORD-109 is Northwind Hospitals (customer_id C001, tier = Enterprise).
+- There is no support_cases row with case_i...
+- **smolagents**: Query timed out before producing an answer.

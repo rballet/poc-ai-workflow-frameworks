@@ -28,7 +28,7 @@ This file summarizes the latest benchmark findings and links to the detailed rep
   - Limitation: extra graph iterations can inflate token and latency budgets.
 - smolagents
   - Strength: tool-driven agent loop is very good at deep multi-step exploration and often reaches highest chain coverage.
-  - Limitation: highest orchestration overhead (substantially more tokens/time) and requires strict budget controls.
+  - Limitation: highest orchestration overhead (substantially more tokens/time). Much of this overhead is due to GPT-5-mini not supporting the `stop` parameter that smolagents relies on for step control, causing inefficient token usage and frequent step exhaustion. Results with a compatible model (e.g. gpt-4o-mini) would likely show significantly better efficiency.
 
 ## Scenario-level Interpretation
 
@@ -45,8 +45,8 @@ This file summarizes the latest benchmark findings and links to the detailed rep
 - **LangGraph** is close on efficiency but less consistent on hard branching outcomes in this run.
   - Why: graph loop is robust, but additional iterations/tool turns can amplify variance on decision-heavy questions.
 - **smolagents** remains the most expensive/slow path in this scenario configuration.
-  - Why: planning-heavy tool orchestration produces substantially more tokens and wall-clock time.
-  - It can still perform well on some complex questions, but reliability and runtime overhead are current risks.
+  - Why: smolagents relies on the `stop` parameter to control its agent step loop, but GPT-5-mini is a reasoning model that [does not support stop sequences](https://community.openai.com/t/why-doesnt-gpt-5-1-support-stop-sequences/1366800). This causes inefficient step usage, frequent `max_steps` exhaustion, and timeouts. This is a known framework-model incompatibility ([smolagents #1893](https://github.com/huggingface/smolagents/issues/1893)), not a reflection of smolagents' capability with compatible models (e.g. gpt-4o-mini).
+  - It can still perform well on some complex questions (e.g. multihop_qa capability where it scores highest), but latency and token overhead remain significantly higher due to this limitation.
 
 ### Artifacts used for this summary
 

@@ -9,7 +9,9 @@ from typing import Any
 from pydantic_ai import Agent, RunContext
 
 from shared.agentic_sql import (
+    LOOKUP_DOC_DESC,
     PROMPT_VERSION,
+    RUN_SQL_DESC,
     AgenticSQLRuntime,
     build_task_prompt,
     get_system_prompt,
@@ -84,21 +86,23 @@ class PydanticAIRAG:
         if self._agent is not None:
             return self._agent
 
-        async def run_sql(ctx: RunContext[AgentDeps], query: str) -> str:
-            """Execute read-only SQL on scenario data."""
-            return ctx.deps.runtime.run_sql(query)
-
-        async def lookup_doc(ctx: RunContext[AgentDeps], query: str) -> str:
-            """Search scenario policy/process docs."""
-            return ctx.deps.runtime.lookup_doc(query)
-
         self._agent = Agent(
             self._model,
             output_type=str,
             instructions=get_system_prompt(),
             deps_type=AgentDeps,
-            tools=[run_sql, lookup_doc],
         )
+
+        @self._agent.tool(description=RUN_SQL_DESC)
+        async def run_sql(ctx: RunContext[AgentDeps], query: str) -> str:
+            """Execute read-only SQL on scenario data."""
+            return ctx.deps.runtime.run_sql(query)
+
+        @self._agent.tool(description=LOOKUP_DOC_DESC)
+        async def lookup_doc(ctx: RunContext[AgentDeps], query: str) -> str:
+            """Search scenario policy/process docs."""
+            return ctx.deps.runtime.lookup_doc(query)
+
         return self._agent
 
     async def ingest(self, documents: list[Document]) -> None:
