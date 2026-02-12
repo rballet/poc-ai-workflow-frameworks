@@ -48,7 +48,7 @@
         "uv run python scripts/run_eval.py --framework crewai --scenario agentic_sql_qa --mode capability --skip-code-review completes without error"
       ],
       "priority": 3,
-      "passes": false
+      "passes": true
     },
     {
       "id": "FW-004",

@@ -85,3 +85,26 @@ Existing frameworks: pydantic_ai, langgraph, smolagents — all fully implemente
 - Multiple sequential Crew runs accumulate tokens — extract from each `result.token_usage` and sum
 - Agents can be reused across Crew instances, reducing setup overhead
 - Running 3-4 sequential Crews per question is slow but works correctly
+
+## FW-003: CrewAI agentic_sql_qa implementation (2026-02-12)
+
+### What was implemented
+- `frameworks/crewai/src/impl_crewai/agentic_sql_qa.py` — tool-calling with CrewAI Agent
+- Two custom tools: `RunSQLTool` and `LookupDocTool` (both extend `crewai.tools.BaseTool`)
+- Tools delegate to shared `AgenticSQLRuntime` for actual logic
+- Agent with `max_iter` controls iteration budget, runtime enforces `max_tool_calls`
+
+### Files changed
+- `frameworks/crewai/src/impl_crewai/agentic_sql_qa.py` — new
+
+### Results
+- Baseline: correctness 1.5/5 (2 questions hit OpenAI content policy errors, max_tool_calls=1 is very restrictive)
+- Capability: correctness 4.4/5, completeness 4.4/5, faithfulness 4.2/5, tool_coverage 0.875
+
+### Learnings and gotchas
+- CrewAI tools extend `crewai.tools.BaseTool` (Pydantic model) with `_run()` method
+- Must set `model_config = {"arbitrary_types_allowed": True}` when storing non-serializable runtime refs
+- `args_schema` must be a Pydantic `BaseModel` class with `Field` descriptions for each arg
+- `Agent(max_iter=N)` controls the iteration limit; set to `max_steps + 2` for buffer
+- Tools are instantiated per query (fresh for each run since runtime.start_run resets state)
+- Some questions hit OpenAI "invalid_prompt" content policy errors — this is an OpenAI API issue, not our code

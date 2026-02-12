@@ -35,11 +35,16 @@ Single retrieval pass + single answer Crew run.
 4. Checker Crew → assess sufficiency, get missing queries
 5. If not sufficient: retrieve missing queries → final Answer Crew
 
+## Agentic SQL QA Architecture (`agentic_sql_qa.py`)
+Uses CrewAI's native tool-calling with two custom tools:
+1. **RunSQLTool** — extends `BaseTool`, delegates to `AgenticSQLRuntime.run_sql()`
+2. **LookupDocTool** — extends `BaseTool`, delegates to `AgenticSQLRuntime.lookup_doc()`
+
 ### Key patterns
-- `_parse_json_from_text()` — extracts JSON from raw text (handles code fences, extra text)
-- `_run_crew()` helper — creates Task + Crew for a single agent, returns CrewOutput
-- Token accumulation: sum `.prompt_tokens` / `.completion_tokens` across all Crew runs
-- Agents reused across Crew instances (LLM shared via `_ensure_llm()`)
+- Tools extend `crewai.tools.BaseTool` with `_run()` method and `args_schema` (Pydantic model)
+- `model_config = {"arbitrary_types_allowed": True}` required for non-serializable runtime refs
+- `Agent(max_iter=max_steps+2)` controls iteration budget; runtime enforces `max_tool_calls`
+- Tools instantiated per query (runtime.start_run resets state each time)
 
 ## Notes
 - Model specified as `"openai/gpt-5-mini"` (LiteLLM provider/model format)
