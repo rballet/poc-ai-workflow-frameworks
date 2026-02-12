@@ -8,6 +8,7 @@ COST_PER_1K_TOKENS: dict[str, dict[str, float]] = {
     "gpt-5-mini": {"prompt": 0.00025, "completion": 0.002},
     "claude-sonnet-4-20250514": {"prompt": 0.003, "completion": 0.015},
     "claude-haiku-3-5-20241022": {"prompt": 0.0008, "completion": 0.004},
+    "claude-haiku-4-5-20251001": {"prompt": 0.0008, "completion": 0.004},
 }
 
 

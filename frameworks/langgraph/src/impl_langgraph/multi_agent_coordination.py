@@ -10,6 +10,7 @@ from __future__ import annotations
 import time
 from typing import Any, Literal
 
+from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
@@ -29,6 +30,19 @@ from shared.retrieval import EmbeddingStore
 
 MODEL = "gpt-5-mini"
 TOP_K = 4
+
+
+def _make_llm(model: str) -> BaseChatModel:
+    """Create the appropriate LangChain chat model based on model name."""
+    kwargs: dict[str, Any] = {"model": model}
+    if "gpt-5" not in model:
+        kwargs["temperature"] = 0
+    if model.startswith("claude"):
+        from langchain_anthropic import ChatAnthropic
+
+        return ChatAnthropic(**kwargs)
+    return ChatOpenAI(**kwargs)
+
 
 ROUTER_PROMPT = (
     "You are a routing coordinator for incident response.\n"
@@ -133,10 +147,7 @@ class LangGraphRAG:
     def _build_baseline_graph(self):
         """Single-agent graph with all three tools (baseline mode)."""
         runtime = self._runtime
-        llm_kwargs: dict = {"model": self._model}
-        if "gpt-5" not in self._model:
-            llm_kwargs["temperature"] = 0
-        llm = ChatOpenAI(**llm_kwargs)
+        llm = _make_llm(self._model)
 
         @tool("query_infrastructure")
         def query_infrastructure(query: str) -> str:
@@ -178,10 +189,7 @@ class LangGraphRAG:
     def _build_capability_graph(self):
         """Multi-agent graph: router → specialist agents → synthesizer (capability mode)."""
         runtime = self._runtime
-        llm_kwargs: dict = {"model": self._model}
-        if "gpt-5" not in self._model:
-            llm_kwargs["temperature"] = 0
-        llm = ChatOpenAI(**llm_kwargs)
+        llm = _make_llm(self._model)
 
         # --- Specialist tools ---
         @tool("query_infrastructure")

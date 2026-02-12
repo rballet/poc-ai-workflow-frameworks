@@ -112,6 +112,46 @@ In baseline mode, the shared tool budget is much tighter (3 calls per specialist
 
 Capability mode delivers meaningfully better answer quality at the cost of ~3x latency and ~4x cost. The hop coverage stays roughly constant because capability mode already had good retrieval in baseline — the quality improvement comes from better evidence synthesis across specialists, not more retrieval.
 
+## Model Comparison: GPT-5-mini vs Claude Haiku 4.5
+
+We ran the multi-agent coordination scenario (capability mode) with Claude Haiku 4.5 to assess whether framework rankings are model-dependent. Claude Haiku 4.5 supports `temperature=0` and `stop` sequences, addressing both determinism and smolagents compatibility issues.
+
+### Side-by-Side: Capability Mode Correctness
+
+| Framework | GPT-5-mini | Claude Haiku 4.5 | Delta |
+| --- | --- | --- | --- |
+| **Pydantic AI** | 4.5/5 | **4.3/5** | -0.2 |
+| **LangGraph** | 3.4/5 | 2.3/5 | -1.1 |
+| **smolagents** | 0.4/5 | **2.1/5** | +1.7 |
+
+### Full Metrics with Claude Haiku 4.5
+
+| Metric | Pydantic AI | LangGraph | smolagents |
+| --- | --- | --- | --- |
+| Avg Correctness (1-5) | **4.3** | 2.3 | 2.1 |
+| Avg Completeness (1-5) | **4.2** | 1.8 | 2.2 |
+| Avg Faithfulness (1-5) | **4.0** | 2.8 | 1.7 |
+| Avg Latency (s) | 30.3 | **18.8** | 105.9 |
+| Total Tokens | 260,023 | 145,485 | 56,724 |
+| Est. Cost (USD) | $0.34 | $0.15 | $0.07 |
+| Agent Coverage | 100% | 58.3% | 100% |
+| Hop Coverage | 91.7% | 26.7% | 30.0% |
+| Coordination Success Rate | 57.1% | 0% | 0% |
+
+### Key Observations
+
+1. **Pydantic AI remains the clear leader across both models.** Its agent-as-tool pattern is model-agnostic — the coordinator delegates effectively regardless of which LLM is used. Correctness dropped only 0.2 points (4.5→4.3), while latency improved 3x (95.6s→30.3s) since Claude Haiku is a non-reasoning model with faster inference.
+
+2. **LangGraph dropped significantly (3.4→2.3).** Claude Haiku appears less effective at LangGraph's routing pattern than GPT-5-mini. The router node, which must classify each query into the correct specialist category, likely benefits from GPT-5-mini's stronger reasoning capabilities. With Claude Haiku, the router under-delegates (58.3% agent coverage vs 68.3% with GPT-5-mini), and hop coverage collapsed from 66.7% to 26.7%.
+
+3. **smolagents improved dramatically (0.4→2.1)** — confirming that the GPT-5-mini results were primarily a model compatibility issue, not an architectural limitation. With Claude Haiku supporting `stop` sequences, smolagents' step control works correctly — no timeouts, 100% agent coverage, and 100% tool coverage. However, it still hits max_steps on most coordination questions, suggesting the step budget needs tuning for this scenario.
+
+4. **Latency improved across the board.** Claude Haiku is 2-7x faster than GPT-5-mini on this scenario because it doesn't perform extended "thinking" like GPT-5-mini's reasoning mode. Pydantic AI dropped from 95.6s to 30.3s, LangGraph from 137.3s to 18.8s.
+
+5. **Framework rankings are partially model-dependent.** The top framework (Pydantic AI) is stable, but the gap between LangGraph and smolagents reversed: with GPT-5-mini, LangGraph was clearly second; with Claude Haiku, they're tied at ~2.2/5. This suggests that LangGraph's routing architecture benefits disproportionately from stronger reasoning models.
+
+Usage: `uv run python scripts/run_eval.py --all --scenario multi_agent_coordination --mode capability --model claude-haiku-4-5-20251001`
+
 ## Previous Findings: Agentic SQL (Capability)
 
 - Best overall balance in this scenario: **Pydantic AI**.
@@ -132,7 +172,12 @@ Usage: `uv run python scripts/run_eval.py --all --scenario multi_agent_coordinat
 
 ## Artifacts
 
-### Multi-Agent Coordination
+### Multi-Agent Coordination (Claude Haiku 4.5)
+- Pydantic AI: [`results/pydantic_ai_multi_agent_coordination_20260212_172010.json`](results/pydantic_ai_multi_agent_coordination_20260212_172010.json)
+- LangGraph: [`results/langgraph_multi_agent_coordination_20260212_172501.json`](results/langgraph_multi_agent_coordination_20260212_172501.json)
+- smolagents: [`results/smolagents_multi_agent_coordination_20260212_174349.json`](results/smolagents_multi_agent_coordination_20260212_174349.json)
+
+### Multi-Agent Coordination (GPT-5-mini)
 - Pydantic AI capability: [`results/pydantic_ai_multi_agent_coordination_20260212_143505.json`](results/pydantic_ai_multi_agent_coordination_20260212_143505.json)
 - LangGraph capability: [`results/langgraph_multi_agent_coordination_20260212_144640.json`](results/langgraph_multi_agent_coordination_20260212_144640.json)
 - smolagents capability: [`results/smolagents_multi_agent_coordination_20260212_145443.json`](results/smolagents_multi_agent_coordination_20260212_145443.json)

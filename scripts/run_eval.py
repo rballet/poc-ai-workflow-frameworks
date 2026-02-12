@@ -10,10 +10,11 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from dotenv import load_dotenv
 
-load_dotenv()  # Load .env file from project root
+load_dotenv(override=True)  # Load .env file from project root (override empty vars)
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "shared-lib" / "src"))
@@ -64,10 +65,37 @@ _FRAMEWORK_CLASS_NAMES = {
 }
 
 
+def _format_model_for_framework(framework_name: str, raw_model: str) -> str:
+    """Convert a raw model name to the framework-specific format.
+
+    Each framework expects a different provider prefix convention:
+    - pydantic_ai: ``"openai:gpt-5-mini"`` or ``"anthropic:claude-haiku-4-5-20251001"``
+    - langgraph: raw model name (provider routing handled by ``_make_llm`` helper)
+    - smolagents (LiteLLM): ``"openai/gpt-5-mini"`` or ``"anthropic/claude-haiku-4-5-20251001"``
+    """
+    if raw_model.startswith("claude"):
+        provider = "anthropic"
+    elif raw_model.startswith(("gpt", "o1", "o3")):
+        provider = "openai"
+    elif raw_model.startswith("gemini"):
+        provider = "google"
+    else:
+        provider = "openai"
+
+    if framework_name == "pydantic_ai":
+        return f"{provider}:{raw_model}"
+    elif framework_name == "smolagents":
+        return f"{provider}/{raw_model}"
+    else:
+        # langgraph — raw name; provider routing is handled by _make_llm helper
+        return raw_model
+
+
 def get_framework(
     name: str,
     scenario_name: str,
     embedding_store: EmbeddingStore | None = None,
+    model: str | None = None,
 ):
     """Import and instantiate a framework by name.
 
@@ -85,7 +113,12 @@ def get_framework(
         try:
             module = importlib.import_module(module_name)
             framework_cls = getattr(module, class_name)
-            return framework_cls(embedding_store=embedding_store)
+            kwargs: dict[str, Any] = {"embedding_store": embedding_store}
+            if model is not None:
+                formatted = _format_model_for_framework(name, model)
+                param_name = "model_id" if name == "smolagents" else "model"
+                kwargs[param_name] = formatted
+            return framework_cls(**kwargs)
         except ModuleNotFoundError as err:
             # If an internal dependency is missing, surface it immediately.
             if err.name and not module_name.startswith(err.name):
@@ -193,6 +226,7 @@ async def run_single(
     skip_code_quality: bool = False,
     skip_code_review: bool = False,
     embedding_store: EmbeddingStore | None = None,
+    model: str | None = None,
     *,
     run_id: int = 0,
     num_runs: int = 1,
@@ -202,6 +236,7 @@ async def run_single(
         framework_name,
         scenario_name=scenario.name,
         embedding_store=embedding_store,
+        model=model,
     )
     mode_config = scenario.modes.get(mode, {})
     if isinstance(framework, ConfigurableFramework):
@@ -274,6 +309,7 @@ async def run_with_repeats(
     skip_code_quality: bool = False,
     skip_code_review: bool = False,
     embedding_store: EmbeddingStore | None = None,
+    model: str | None = None,
 ) -> FrameworkEvaluation:
     """Run evaluation N times and return the averaged result."""
     runs: list[FrameworkEvaluation] = []
@@ -287,6 +323,7 @@ async def run_with_repeats(
             skip_code_quality=skip_code_quality,
             skip_code_review=skip_code_review,
             embedding_store=embedding_store,
+            model=model,
             run_id=i,
             num_runs=num_runs,
         )
@@ -327,6 +364,11 @@ async def main():
             "Evaluation mode. baseline=fixed scenario pipeline, "
             "capability=scenario-specific framework extensions."
         ),
+    )
+    parser.add_argument(
+        "--model",
+        default=None,
+        help="Override the LLM model for all frameworks (e.g. claude-haiku-4-5-20251001)",
     )
     parser.add_argument("--judge-model", default="gpt-5-mini", help="Model for LLM judge")
     parser.add_argument(
@@ -369,6 +411,8 @@ async def main():
         embedding_store = create_embedding_store(scenario)
         print(f"  Ingested {len(scenario.documents)} documents, store ready.")
 
+    if args.model:
+        print(f"  Model override: {args.model}")
     if args.runs > 1:
         print(f"  Multi-run mode: {args.runs} runs per framework")
 
@@ -387,6 +431,7 @@ async def main():
                 skip_code_quality=args.skip_code_quality,
                 skip_code_review=args.skip_code_review,
                 embedding_store=embedding_store,
+                model=args.model,
             )
             evaluations.append(evaluation)
         except Exception as e:

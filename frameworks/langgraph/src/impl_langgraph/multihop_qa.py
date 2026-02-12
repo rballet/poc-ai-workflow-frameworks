@@ -9,6 +9,7 @@ import uuid
 from typing import Any
 
 import chromadb
+from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
@@ -23,6 +24,19 @@ EMBEDDING_MODEL = "text-embedding-3-small"
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
 TOP_K = 3
+
+
+def _make_llm(model: str) -> BaseChatModel:
+    """Create the appropriate LangChain chat model based on model name."""
+    kwargs: dict[str, Any] = {"model": model}
+    if "gpt-5" not in model:
+        kwargs["temperature"] = 0
+    if model.startswith("claude"):
+        from langchain_anthropic import ChatAnthropic
+
+        return ChatAnthropic(**kwargs)
+    return ChatOpenAI(**kwargs)
+
 
 ANSWER_SYSTEM_PROMPT = (
     "You are a precise multi-hop RAG assistant. Use only the provided context. "
@@ -225,10 +239,7 @@ class LangGraphRAG:
             if state["steps"] >= max_steps:
                 return {"should_stop": True}
 
-            llm_kw: dict = {"model": model}
-            if "gpt-5" not in model:
-                llm_kw["temperature"] = 0
-            llm = ChatOpenAI(**llm_kw)
+            llm = _make_llm(model)
             context_preview = "\n\n---\n\n".join(state["context_chunks"])
             messages = [
                 SystemMessage(content=ASSESS_SYSTEM_PROMPT),
@@ -270,10 +281,7 @@ class LangGraphRAG:
 
         async def generate(state: RAGState) -> dict:
             context = "\n\n---\n\n".join(state["context_chunks"])
-            llm_kw: dict = {"model": model}
-            if "gpt-5" not in model:
-                llm_kw["temperature"] = 0
-            llm = ChatOpenAI(**llm_kw)
+            llm = _make_llm(model)
             messages = [
                 SystemMessage(content=ANSWER_SYSTEM_PROMPT),
                 HumanMessage(content=f"Context:\n{context}\n\nQuestion: {state['question']}"),

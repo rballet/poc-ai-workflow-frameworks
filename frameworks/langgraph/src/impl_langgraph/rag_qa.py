@@ -12,6 +12,7 @@ import uuid
 from typing import Any
 
 import chromadb
+from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
@@ -26,6 +27,19 @@ EMBEDDING_MODEL = "text-embedding-3-small"
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
 TOP_K = 3
+
+
+def _make_llm(model: str) -> BaseChatModel:
+    """Create the appropriate LangChain chat model based on model name."""
+    kwargs: dict[str, Any] = {"model": model}
+    if "gpt-5" not in model:
+        kwargs["temperature"] = 0
+    if model.startswith("claude"):
+        from langchain_anthropic import ChatAnthropic
+
+        return ChatAnthropic(**kwargs)
+    return ChatOpenAI(**kwargs)
+
 
 SYSTEM_PROMPT = (
     "You are a precise RAG assistant. Answer the question based ONLY on "
@@ -142,10 +156,7 @@ class LangGraphRAG:
             question = state["question"]
             context = "\n\n---\n\n".join(state["context_chunks"])
 
-            llm_kw: dict = {"model": model}
-            if "gpt-5" not in model:
-                llm_kw["temperature"] = 0
-            llm = ChatOpenAI(**llm_kw)
+            llm = _make_llm(model)
             messages = [
                 SystemMessage(content=SYSTEM_PROMPT),
                 HumanMessage(

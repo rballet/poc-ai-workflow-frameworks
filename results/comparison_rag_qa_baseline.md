@@ -1,6 +1,6 @@
 # Framework Comparison Report
 
-Generated: 2026-02-10 21:59 UTC
+Generated: 2026-02-12 17:12 UTC
 Scenario: rag_qa
 Scenario Type: rag_qa
 Mode: baseline
@@ -9,41 +9,66 @@ Questions: 7
 
 ## Summary
 
-| Metric | LangGraph |
+| Metric | smolagents |
 | --- | --- |
-| Avg Latency (s) | 2.14 |
-| Total Tokens | 3,435 |
-| Est. Cost (USD) | $0.0008 |
+| Avg Latency (s) | 4.64 |
+| Total Tokens | 4,442 |
+| Est. Cost (USD) | $0.0078 |
 | Avg Correctness (1-5) | 4.4 |
-| Avg Completeness (1-5) | 4.1 |
-| Avg Faithfulness (1-5) | 4.4 |
+| Avg Completeness (1-5) | 4.3 |
+| Avg Faithfulness (1-5) | 5.0 |
 | Avg Retrieval Precision | 1.00 |
 | Avg Retrieval Recall | 1.00 |
+
+## Derived Scorecard (0-100)
+
+These derived scores are computed from existing metrics and shown as decision aids (not as a single winner metric).
+
+| Axis | smolagents |
+| --- | --- |
+| Capability | 91.4 |
+| Efficiency | 33.3 |
+| Developer Experience | N/A |
+
+## Runtime Distribution
+
+| Metric | smolagents |
+| --- | --- |
+| Latency p50 (s) | 3.22 |
+| Latency p95 (s) | 9.80 |
 
 ## Per-Question Results
 
 ### q1: What is the GIL in Python and how does it affect concurrency?
 
-| Metric | LangGraph |
+| Metric | smolagents |
 | --- | --- |
-| Latency (s) | 2.13 |
-| Tokens | 505 |
+| Latency (s) | 2.81 |
+| Tokens | 690 |
 | Correctness | 5 |
-| Completeness | 5 |
+| Completeness | 4 |
 | Faithfulness | 5 |
 | Retrieval Prec | 1.00 |
 | Retrieval Recall | 1.00 |
 
 **Answers:**
 
-- **LangGraph**: The Global Interpreter Lock (GIL) in Python is a mutex that allows only one thread to execute Python bytecode at a time. This means that CPU-bound tasks do not benefit from threading in CPython, as threads cannot achieve true parallelism for such tasks. However, the GIL is released during I/O operat...
+- **smolagents**: # The Global Interpreter Lock (GIL) in Python
+
+According to **python_concurrency.md**, the GIL (Global Interpreter Lock) is a mutex in CPython that allows only one thread to execute Python bytecode at a time.
+
+## Impact on Concurrency
+
+The GIL has the following effects:
+
+1. **CPU-bound tasks**: CPU-...
 
 ### q2: What is the difference between a 301 and a 302 HTTP redirect?
 
-| Metric | LangGraph |
+| Metric | smolagents |
 | --- | --- |
-| Latency (s) | 2.02 |
-| Tokens | 478 |
+| Latency (s) | 2.06 |
+| Tokens | 587 |
 | Correctness | 5 |
 | Completeness | 5 |
 | Faithfulness | 5 |
@@ -52,62 +77,82 @@ Questions: 7
 
 **Answers:**
 
-- **LangGraph**: A `301 Moved Permanently` redirect means the resource has permanently moved to a new URL, and clients and search engines should update their references. In contrast, a `302 Found` redirect indicates that the resource is temporarily at a different URL, and the client should continue using the origina...
+- **smolagents**: # Difference Between 301 and 302 HTTP Redirects
+
+Based on the provided context from **http_status_codes.md**:
+
+- **301 Moved Permanently**: The resource has permanently moved to a new URL. Clients and search engines should update their references to use the new URL.
+
+- **302 Found**: The resource is...
 
 ### q3: When should I use git rebase instead of git merge?
 
-| Metric | LangGraph |
+| Metric | smolagents |
 | --- | --- |
-| Latency (s) | 2.04 |
-| Tokens | 483 |
+| Latency (s) | 3.22 |
+| Tokens | 602 |
 | Correctness | 5 |
-| Completeness | 4 |
+| Completeness | 5 |
 | Faithfulness | 5 |
 | Retrieval Prec | 1.00 |
 | Retrieval Recall | 1.00 |
 
 **Answers:**
 
-- **LangGraph**: You should use git rebase to keep a feature branch up to date with `main` before merging, as it creates a linear history and results in a cleaner, easier-to-read commit log. However, you should never rebase commits that have been pushed to a shared branch, as it rewrites history and can cause confli...
+- **smolagents**: # When to Use Git Rebase Instead of Git Merge
+
+According to the git_branching.md document, you should use **rebase** in the following situation:
+
+**Use rebase to keep a feature branch up to date with `main` before merging.** This results in a cleaner, easier-to-read commit log.
+
+However, there is an...
 
 ### q4: Should I use threading or asyncio for making many HTTP requests in Python?
 
-| Metric | LangGraph |
+| Metric | smolagents |
 | --- | --- |
-| Latency (s) | 1.63 |
-| Tokens | 468 |
+| Latency (s) | 3.50 |
+| Tokens | 679 |
 | Correctness | 5 |
-| Completeness | 4 |
+| Completeness | 5 |
 | Faithfulness | 5 |
 | Retrieval Prec | 1.00 |
 | Retrieval Recall | 1.00 |
 
 **Answers:**
 
-- **LangGraph**: You should use `asyncio` for making many HTTP requests in Python, as it is best for high-concurrency I/O-bound tasks like handling thousands of simultaneous HTTP requests. It has lower overhead compared to threading and is designed for such use cases. This information is sourced from the document "p...
+- **smolagents**: # Threading vs Asyncio for HTTP Requests
+
+Based on the provided context, **asyncio is the better choice** for making many HTTP requests in Python.
+
+According to the source document (python_concurrency.md):
+
+- **Asyncio** is "best for high-concurrency I/O-bound tasks, like handling thousands of simul...
 
 ### q5: What HTTP status code should a server return when a resource is not found?
 
-| Metric | LangGraph |
+| Metric | smolagents |
 | --- | --- |
-| Latency (s) | 1.16 |
-| Tokens | 430 |
+| Latency (s) | 10.83 |
+| Tokens | 559 |
 | Correctness | 1 |
 | Completeness | 1 |
-| Faithfulness | 1 |
+| Faithfulness | 5 |
 | Retrieval Prec | 1.00 |
 | Retrieval Recall | 1.00 |
 
 **Answers:**
 
-- **LangGraph**: The provided context does not contain information about the HTTP status code for a resource not found. Therefore, I cannot answer the question based on the given context.
+- **smolagents**: Based on the provided context from http_status_codes.md, I cannot find information about the HTTP status code for when a resource is not found.
+
+The document covers 1xx Informational codes, 2xx Success codes, and begins to discuss 3xx Redirection and 4xx Client Error codes, but the specific section ...
 
 ### q6: Explain the GitHub Flow branching strategy.
 
-| Metric | LangGraph |
+| Metric | smolagents |
 | --- | --- |
-| Latency (s) | 2.48 |
-| Tokens | 492 |
+| Latency (s) | 7.40 |
+| Tokens | 604 |
 | Correctness | 5 |
 | Completeness | 5 |
 | Faithfulness | 5 |
@@ -116,14 +161,20 @@ Questions: 7
 
 **Answers:**
 
-- **LangGraph**: GitHub Flow is a lightweight branching model designed for continuous deployment. The strategy involves creating a feature branch from the `main` branch, making commits on that feature branch, opening a pull request for code review, and then merging back to `main` after receiving approval. The `main`...
+- **smolagents**: # GitHub Flow Branching Strategy
+
+Based on the provided context from **git_branching.md**, GitHub Flow is a lightweight branching model designed for continuous deployment with the following characteristics:
+
+## Key Rules:
+1. **Create a feature branch** from `main`
+2. **Make commits** on the feature ...
 
 ### q7: What are the tradeoffs between multiprocessing and asyncio in Python?
 
-| Metric | LangGraph |
+| Metric | smolagents |
 | --- | --- |
-| Latency (s) | 3.51 |
-| Tokens | 579 |
+| Latency (s) | 2.67 |
+| Tokens | 721 |
 | Correctness | 5 |
 | Completeness | 5 |
 | Faithfulness | 5 |
@@ -132,8 +183,10 @@ Questions: 7
 
 **Answers:**
 
-- **LangGraph**: The tradeoffs between multiprocessing and asyncio in Python are as follows:
+- **smolagents**: # Tradeoffs Between Multiprocessing and Asyncio
 
-- **Multiprocessing**:
-  - Bypasses the Global Interpreter Lock (GIL) entirely, making it ideal for CPU-bound tasks like data processing, mathematical computations, or image manipulation.
-  - Higher memory overhead since ea...
+Based on the provided context from **python_concurrency.md**:
+
+## Multiprocessing Tradeoffs:
+- **Advantage**: Bypasses the GIL entirely, making it ideal for CPU-bound tasks (data processing, mathematical computations, image manipulation)
+- **Disadvant...
