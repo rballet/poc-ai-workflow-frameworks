@@ -1,6 +1,6 @@
 # Framework Comparison Report
 
-Generated: 2026-02-12 00:00 UTC
+Generated: 2026-02-12 13:32 UTC
 Scenario: multi_agent_coordination
 Scenario Type: multi_agent_coordination
 Mode: baseline
@@ -11,14 +11,14 @@ Questions: 10
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Avg Latency (s) | 37.46 | 33.24 | 10.82 |
-| Total Tokens | 64,387 | 60,300 | 27,012 |
-| Est. Cost (USD) | $0.0563 | $0.0553 | $0.0189 |
-| Avg Correctness (1-5) | 2.7 | 2.5 | 1.5 |
-| Avg Completeness (1-5) | 2.7 | 2.4 | 1.4 |
-| Avg Faithfulness (1-5) | 4.8 | 4.6 | 1.7 |
-| Avg Retrieval Precision | 0.52 | 0.72 | 0.60 |
-| Avg Retrieval Recall | 0.60 | 0.58 | 0.38 |
+| Avg Latency (s) | 31.95 | 28.97 | 14.59 |
+| Total Tokens | 70,235 | 60,995 | 33,100 |
+| Est. Cost (USD) | $0.0688 | $0.0636 | $0.0317 |
+| Avg Correctness (1-5) | 3.6 | 3.2 | 1.4 |
+| Avg Completeness (1-5) | 3.3 | 2.7 | 1.4 |
+| Avg Faithfulness (1-5) | 4.9 | 4.8 | 2.1 |
+| Avg Retrieval Precision | 0.61 | 0.56 | 0.15 |
+| Avg Retrieval Recall | 0.63 | 0.56 | 0.11 |
 
 ## Derived Scorecard (0-100)
 
@@ -26,45 +26,45 @@ These derived scores are computed from existing metrics and shown as decision ai
 
 | Axis | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Capability | 68.0 | 63.3 | 30.7 |
-| Efficiency | 0.0 | 3.2 | 33.3 |
+| Capability | 78.7 | 71.3 | 32.7 |
+| Efficiency | 0.0 | 5.8 | 33.3 |
 | Developer Experience | N/A | N/A | N/A |
 
 ## Runtime Distribution
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Latency p50 (s) | 33.02 | 27.85 | 7.92 |
-| Latency p95 (s) | 72.97 | 66.69 | 24.96 |
+| Latency p50 (s) | 27.75 | 30.16 | 14.35 |
+| Latency p95 (s) | 51.04 | 39.38 | 24.36 |
 
 ## Scenario-Specific Metrics
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Actual Agents Avg | 1.500 | 1.600 | 1.100 |
-| Agent Coverage Avg | 0.750 | 0.767 | 0.633 |
-| Coordination Avg Agent Coverage | 0.643 | 0.667 | 0.476 |
-| Coordination Avg Grounded Hop Coverage | 0.262 | 0.224 | 0 |
-| Coordination Avg Hop Coverage | 0.598 | 0.602 | 0.048 |
-| Coordination Avg Tool Coverage | 0.643 | 0.667 | 0.476 |
+| Actual Agents Avg | 2.200 | 2.100 | 1.300 |
+| Agent Coverage Avg | 0.933 | 0.933 | 0.700 |
+| Coordination Avg Agent Coverage | 0.905 | 0.905 | 0.571 |
+| Coordination Avg Grounded Hop Coverage | 0.390 | 0.243 | 0 |
+| Coordination Avg Hop Coverage | 0.817 | 0.545 | 0.048 |
+| Coordination Avg Tool Coverage | 0.905 | 0.905 | 0.571 |
 | Coordination Points Avg | 2.200 | 2.200 | 2.200 |
 | Coordination Questions | 7 | 7 | 7 |
-| Coordination Success Avg | 0.100 | 0.200 | 0 |
-| Coordination Success Rate | 0.143 | 0.286 | 0 |
-| Easy Avg Hop Coverage | 0.667 | 0.667 | 0.333 |
+| Coordination Success Avg | 0.300 | 0.100 | 0 |
+| Coordination Success Rate | 0.429 | 0.143 | 0 |
+| Easy Avg Hop Coverage | 1 | 1 | 0.333 |
 | Easy Questions | 3 | 3 | 3 |
-| Grounded Hop Coverage Avg | 0.383 | 0.357 | 0.100 |
+| Grounded Hop Coverage Avg | 0.573 | 0.470 | 0.100 |
 | Has Tool Trace Avg | 1 | 1 | 1 |
-| Hop Coverage Avg | 0.618 | 0.622 | 0.133 |
+| Hop Coverage Avg | 0.872 | 0.682 | 0.133 |
 | Is Coordination Avg | 0.700 | 0.700 | 0.700 |
 | Is Easy Avg | 0.300 | 0.300 | 0.300 |
-| Matched Hops Avg | 1.800 | 1.800 | 0.200 |
-| Matched Tools Avg | 1.400 | 1.500 | 1.100 |
+| Matched Hops Avg | 2.400 | 1.600 | 0.200 |
+| Matched Tools Avg | 1.900 | 1.900 | 1.300 |
 | Required Agents Avg | 2.100 | 2.100 | 2.100 |
 | Required Hops Avg | 2.800 | 2.800 | 2.800 |
 | Required Tools Count Avg | 2.100 | 2.100 | 2.100 |
-| Tool Calls Reported Avg | 2.800 | 2.800 | 1.100 |
-| Tool Coverage Avg | 0.750 | 0.767 | 0.633 |
+| Tool Calls Reported Avg | 2.900 | 2.800 | 1.300 |
+| Tool Coverage Avg | 0.933 | 0.933 | 0.700 |
 | Tool Trace Rate | 1 | 1 | 1 |
 
 ## Per-Question Results
@@ -73,59 +73,65 @@ These derived scores are computed from existing metrics and shown as decision ai
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Latency (s) | 16.37 | 15.54 | 6.60 |
-| Tokens | 6,202 | 6,366 | 2,436 |
-| Correctness | 1 | 1 | 1 |
-| Completeness | 1 | 1 | 1 |
+| Latency (s) | 11.29 | 6.94 | 15.91 |
+| Tokens | 2,561 | 1,547 | 3,324 |
+| Correctness | 5 | 5 | 1 |
+| Completeness | 5 | 5 | 1 |
 | Faithfulness | 5 | 5 | 1 |
-| Retrieval Prec | 0.50 | 0.50 | 1.00 |
-| Retrieval Recall | 1.00 | 1.00 | 1.00 |
+| Retrieval Prec | 0.50 | 0.50 | 0.00 |
+| Retrieval Recall | 1.00 | 1.00 | 0.00 |
 | Actual Agents | 1 | 1 | 1 |
 | Agent Coverage | 1 | 1 | 1 |
 | Coordination Points | 0 | 0 | 0 |
 | Coordination Success | 0 | 0 | 0 |
-| Grounded Hop Coverage | 0 | 0 | 0 |
+| Grounded Hop Coverage | 1 | 1 | 0 |
 | Has Tool Trace | 1 | 1 | 1 |
-| Hop Coverage | 0 | 0 | 0 |
+| Hop Coverage | 1 | 1 | 0 |
 | Is Coordination | 0 | 0 | 0 |
 | Is Easy | 1 | 1 | 1 |
-| Matched Hops | 0 | 0 | 0 |
+| Matched Hops | 1 | 1 | 0 |
 | Matched Tools | 1 | 1 | 1 |
 | Required Agents | 1 | 1 | 1 |
 | Required Hops | 1 | 1 | 1 |
 | Required Tools Count | 1 | 1 | 1 |
-| Tool Calls Reported | 3 | 3 | 1 |
+| Tool Calls Reported | 2 | 1 | 1 |
 | Tool Coverage | 1 | 1 | 1 |
 
 **Answers:**
 
-- **Pydantic AI**: I confirmed the cluster exists but hit the tool-call limit before I could list its services.
+- **Pydantic AI**: I queried the infrastructure service registry for cluster "prod-us-east-1". Services running there and their tiers:
 
-What I was able to verify
-- Cluster name prod-us-east-1 exists with cluster_id = CL-001 (queried clusters).
-- The services table contains a tier column (I inspected the schema with PRAGMA to confirm the col...
-- **LangGraph**: Summary
-- I found the cluster prod-us-east-1 in our inventory:
-  - cluster_id: CL-001
-  - name: prod-us-east-1
-  - region: us-east-1
-  - environment: production
+- api-gateway (service_id: SVC-001) — critical  
+- auth-service (service_id: SVC-002) — critical  
+- payment-service (service_id: SVC-003) — critical  
+- user-profile (service_id: SVC...
+- **LangGraph**: I queried the infrastructure inventory for cluster "prod-us-east-1". Services running there and their tiers:
 
-What I could not complete
-- I was not able to retrieve the list of services and their tiers because the tool-call budget was reached befor...
-- **smolagents**: Calling tool to inspect clusters table schema to build the correct query.
+- api-gateway (SVC-001) — critical  
+- auth-service (SVC-002) — critical  
+- payment-service (SVC-003) — critical  
+- user-profile (SVC-008) — standard
+
+Source: infrastructure services table...
+- **smolagents**: Calling tool to run the query for services on prod-us-east-1...
+
+[Tool call]
+function: query_infrastructure
+arguments:
+{
+  "query": "SELECT s.service_id AS service_id, s.name AS service_name, s.tier AS tier FROM services s JOIN clusters c ON s.cluster_id = c.cluster_id WHERE c.name = 'prod-us-east-1...
 
 ### q2: Are there any open critical vulnerabilities? List them with their remediation deadlines.
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Latency (s) | 31.77 | 23.54 | 5.95 |
-| Tokens | 7,455 | 4,857 | 2,390 |
+| Latency (s) | 24.35 | 22.81 | 9.28 |
+| Tokens | 5,827 | 6,416 | 2,469 |
 | Correctness | 5 | 5 | 1 |
-| Completeness | 5 | 5 | 1 |
+| Completeness | 5 | 4 | 1 |
 | Faithfulness | 5 | 5 | 1 |
-| Retrieval Prec | 0.50 | 0.50 | 1.00 |
-| Retrieval Recall | 1.00 | 1.00 | 1.00 |
+| Retrieval Prec | 1.00 | 0.50 | 0.00 |
+| Retrieval Recall | 1.00 | 1.00 | 0.00 |
 | Actual Agents | 2 | 2 | 1 |
 | Agent Coverage | 1 | 1 | 1 |
 | Coordination Points | 0 | 0 | 0 |
@@ -145,39 +151,39 @@ What I could not complete
 
 **Answers:**
 
-- **Pydantic AI**: Short answer: Yes — there is 1 open critical vulnerability. It is overdue.
+- **Pydantic AI**: Short answer
+- Yes. There is 1 open critical vulnerability:
+  - Scan ID: SCAN-201
+  - Service: SVC-004
+  - CVE: CVE-2025-31337
+  - Description: Remote code execution in container base image
+  - Scanned at: 2026-02-08T06:00:00Z
+  - Status: open
+  - Remediation deadline: 2026-02-09T06:00:00Z — this de...
+- **LangGraph**: Short answer: Yes — there is one open critical vulnerability.
 
-Evidence (from vulnerability_scans):
+Details (from vulnerability_scans):
 - scan_id: SCAN-201
 - service_id: SVC-004
-- scanned_at: 2026-02-08T06:00:00Z
-- severity: critical
 - cve_id: CVE-2025-31337
 - description: Remote code execution in container base image
-- s...
-- **LangGraph**: Yes — there is one open critical vulnerability.
-
-Details
-- scan_id: SCAN-201
-- severity / status: critical / open
-- cve: CVE-2025-31337
-- description: Remote code execution in container base image
-- service: order-service (service_id SVC-004), team_owner: Commerce, tier: critical
-- scanned_at: 2026-...
-- **smolagents**: Calling tool to fetch open critical vulnerabilities now.
+- severity: critical
+- status: open
+- detected/scanned_at: 2026-02-08T06:...
+- **smolagents**: Calling tool to retrieve critical vulnerabilities (excluding resolved/closed/mitigated)...
 
 ### q3: What are the escalation triggers for promoting a sev2 incident to sev1?
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Latency (s) | 13.87 | 19.31 | 10.03 |
-| Tokens | 2,165 | 2,678 | 2,803 |
+| Latency (s) | 29.15 | 29.41 | 7.70 |
+| Tokens | 8,009 | 5,577 | 2,730 |
 | Correctness | 5 | 5 | 5 |
 | Completeness | 5 | 5 | 5 |
 | Faithfulness | 5 | 5 | 5 |
-| Retrieval Prec | 1.00 | 1.00 | 1.00 |
+| Retrieval Prec | 0.50 | 0.50 | 1.00 |
 | Retrieval Recall | 1.00 | 1.00 | 1.00 |
-| Actual Agents | 1 | 1 | 1 |
+| Actual Agents | 3 | 2 | 1 |
 | Agent Coverage | 1 | 1 | 1 |
 | Coordination Points | 0 | 0 | 0 |
 | Coordination Success | 0 | 0 | 0 |
@@ -191,129 +197,125 @@ Details
 | Required Agents | 1 | 1 | 1 |
 | Required Hops | 1 | 1 | 1 |
 | Required Tools Count | 1 | 1 | 1 |
-| Tool Calls Reported | 1 | 1 | 1 |
+| Tool Calls Reported | 3 | 3 | 1 |
 | Tool Coverage | 1 | 1 | 1 |
 
 **Answers:**
 
-- **Pydantic AI**: Short answer — escalate a Sev2 to Sev1 if ANY of the following are true:
+- **Pydantic AI**: Short answer — the runbook lists four explicit triggers. Escalate a Sev2 to Sev1 if ANY of the following are true:
 
-- Cascading impact detected: the affected service has downstream dependents that are also degraded or failing.  
-- Investigating > 60 minutes with no identification: the incident remains in "investigating" status for more than...
-- **LangGraph**: Short answer — from the incident response runbook, a Sev2 MUST be promoted to Sev1 if ANY of the following are true:
-
-1. Cascading impact detected — the affected service has downstream dependents that are also degraded.
+1. Cascading impact detected — the affected service has downstream dependents that are also degraded.  
 2. The incident remains in "investigating" status for more than 60 minutes witho...
+- **LangGraph**: Short answer — per our incident response runbook, escalate a Sev2 to Sev1 immediately if ANY of the following are true:
+
+1. Cascading impact detected — the affected service has downstream dependents that are also degraded or failing.  
+2. Investigation remains in “investigating” for > 60 minutes wit...
 - **smolagents**: Per the incident response runbook, a Sev2 MUST be promoted to Sev1 if ANY of the following escalation triggers are met:
 
-- Cascading impact detected — the affected service has downstream dependents that are also degraded.  
-- Investigation has been in "investigating" status > 60 minutes without iden...
+1. Cascading impact detected — the affected service has downstream dependents that are also degraded.  
+2. The incident remains in "investigating" status for more than 60 minutes ...
 
 ### q4: Was the most recent deploy of auth-service compliant with the change management policy?
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Latency (s) | 42.17 | 29.18 | 10.48 |
-| Tokens | 6,119 | 6,665 | 2,384 |
-| Correctness | 3 | 1 | 1 |
-| Completeness | 3 | 1 | 1 |
-| Faithfulness | 4 | 5 | 1 |
-| Retrieval Prec | 0.50 | 0.50 | 0.00 |
+| Latency (s) | 38.29 | 28.97 | 8.76 |
+| Tokens | 7,539 | 6,800 | 2,656 |
+| Correctness | 3 | 2 | 1 |
+| Completeness | 2 | 2 | 1 |
+| Faithfulness | 5 | 5 | 1 |
+| Retrieval Prec | 0.50 | 0.33 | 0.00 |
 | Retrieval Recall | 1.00 | 0.50 | 0.00 |
-| Actual Agents | 2 | 1 | 1 |
-| Agent Coverage | 1 | 0.500 | 0.500 |
+| Actual Agents | 2 | 2 | 1 |
+| Agent Coverage | 1 | 1 | 0.500 |
 | Coordination Points | 2 | 2 | 2 |
-| Coordination Success | 1 | 0 | 0 |
-| Grounded Hop Coverage | 1 | 0.333 | 0 |
+| Coordination Success | 1 | 1 | 0 |
+| Grounded Hop Coverage | 1 | 0.667 | 0 |
 | Has Tool Trace | 1 | 1 | 1 |
-| Hop Coverage | 1 | 0.333 | 0 |
+| Hop Coverage | 1 | 1 | 0 |
 | Is Coordination | 1 | 1 | 1 |
 | Is Easy | 0 | 0 | 0 |
-| Matched Hops | 3 | 1 | 0 |
-| Matched Tools | 2 | 1 | 1 |
+| Matched Hops | 3 | 3 | 0 |
+| Matched Tools | 2 | 2 | 1 |
 | Required Agents | 2 | 2 | 2 |
 | Required Hops | 3 | 3 | 3 |
 | Required Tools Count | 2 | 2 | 2 |
 | Tool Calls Reported | 3 | 3 | 1 |
-| Tool Coverage | 1 | 0.500 | 0.500 |
+| Tool Coverage | 1 | 1 | 0.500 |
 
 **Answers:**
 
-- **Pydantic AI**: Short answer: No — the most recent deploy of auth-service was not compliant with the change management policy.
+- **Pydantic AI**: Short answer: No — based on available evidence the most recent deploy of auth-service (DEP-102) appears non‑compliant with the change management policy.
 
-What I checked (evidence)
-- recent_deploys / services record for auth-service (most recent deploy):
-  - service_id: SVC-002, tier: critical
-  - deploy_id: DEP-102
-  - deployed_at: 2026-02-...
-- **LangGraph**: Short answer: I cannot determine compliance from the systems I can query — the recent_deploys table contains no record for "auth-service" so there is no deployment metadata I can check against the change-management requirements.
+Evidence found
+- recent_deploys row for auth-service (DEP-102)
+  - deployed_at: 2026-02-10T16:30:00Z
+  - deployed_by: bob@nimbusops.io
+  - change_...
+- **LangGraph**: Short answer: I cannot determine compliance with the change-management policy from the data I was able to fetch. I did retrieve some relevant facts and the policy text, but the critical deployment metadata needed to decide compliance is missing.
 
-What I checked
-- I inspected the recent_deploys schema and then querie...
-- **smolagents**: Tool call 1/2: query_infrastructure
-</commentary>
+What I did fetch
+- Service record:
+  - service_id: SV...
+- **smolagents**: Calling tools:
+[{'id': 'call_1', 'type': 'function', 'function': {'name': 'query_infrastructure', 'arguments': {'query': "SELECT * FROM services WHERE name = 'auth-service';"}}}]
 
 ### q5: Was the firewall rule change FW-404 on prod-eu-west-1 properly authorized?
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Latency (s) | 24.35 | 25.38 | 9.25 |
-| Tokens | 5,246 | 5,073 | 2,581 |
-| Correctness | 1 | 3 | 1 |
-| Completeness | 1 | 3 | 1 |
+| Latency (s) | 26.00 | 39.74 | 14.15 |
+| Tokens | 4,411 | 8,655 | 2,940 |
+| Correctness | 2 | 2 | 1 |
+| Completeness | 2 | 2 | 1 |
 | Faithfulness | 5 | 5 | 1 |
-| Retrieval Prec | 0.50 | 1.00 | 1.00 |
-| Retrieval Recall | 0.50 | 0.50 | 0.50 |
-| Actual Agents | 1 | 1 | 1 |
-| Agent Coverage | 0.500 | 0.500 | 0.500 |
+| Retrieval Prec | 0.50 | 0.50 | 0.00 |
+| Retrieval Recall | 0.50 | 0.50 | 0.00 |
+| Actual Agents | 2 | 2 | 1 |
+| Agent Coverage | 1 | 1 | 0.500 |
 | Coordination Points | 2 | 2 | 2 |
 | Coordination Success | 0 | 0 | 0 |
-| Grounded Hop Coverage | 0 | 0.500 | 0 |
+| Grounded Hop Coverage | 0 | 0 | 0 |
 | Has Tool Trace | 1 | 1 | 1 |
-| Hop Coverage | 0 | 0.500 | 0 |
+| Hop Coverage | 0.500 | 0.500 | 0 |
 | Is Coordination | 1 | 1 | 1 |
 | Is Easy | 0 | 0 | 0 |
-| Matched Hops | 0 | 1 | 0 |
-| Matched Tools | 1 | 1 | 1 |
+| Matched Hops | 1 | 1 | 0 |
+| Matched Tools | 2 | 2 | 1 |
 | Required Agents | 2 | 2 | 2 |
 | Required Hops | 2 | 2 | 2 |
 | Required Tools Count | 2 | 2 | 2 |
 | Tool Calls Reported | 3 | 3 | 1 |
-| Tool Coverage | 0.500 | 0.500 | 0.500 |
+| Tool Coverage | 1 | 1 | 0.500 |
 
 **Answers:**
 
-- **Pydantic AI**: Short answer: I cannot confirm that FW-404 on prod-eu-west-1 was properly authorized.
-
-What I checked
-- I looked for a firewall_rules row for rule_id = 'FW-404' on cluster_id = 'prod-eu-west-1' and there is no matching record in the firewall_rules table.
-- The firewall_rules table schema does includ...
-- **LangGraph**: Short answer: No evidence that FW-404 was changed on prod-eu-west-1. The only record for FW-404 is for cluster_id CL-002 and it was modified by an automation account — we cannot conclusively say it was “properly authorized” for prod-eu-west-1 without additional audit/change-ticket evidence.
-
-What I ...
-- **smolagents**: Calling query_security to find the FW-404 row (one call).
+- **Pydantic AI**: Short answer: I can’t confirm whether FW-404 was properly authorized with the data I retrieved. I was able to fetch the firewall/change-management policy (which requires a CHG ticket and security approval for production changes), but I could not retrieve the firewall rule record or the access log en...
+- **LangGraph**: Short answer: I cannot confirm whether FW-404 on prod-eu-west-1 was properly authorized with the information available. The change-management and security runbooks require an approved change ticket plus security approval for production changes (or explicit incident-commander authorization + retroact...
+- **smolagents**: Calling tools:
+[{"id":"call_1","type":"function","function":{"name":"query_security","arguments":{"query":"SELECT rule_id, cluster_id, direction, source_cidr, dest_port, protocol, action, last_modified_at, modified_by FROM firewall_rules WHERE rule_id = 'FW-404';"}}}]
 
 ### q6: Which services have both open critical or high vulnerabilities and recent deploys without change tickets?
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Latency (s) | 34.28 | 26.52 | 31.43 |
-| Tokens | 6,506 | 4,198 | 4,258 |
-| Correctness | 2 | 1 | 1 |
-| Completeness | 2 | 1 | 1 |
-| Faithfulness | 5 | 5 | 1 |
-| Retrieval Prec | 0.67 | 0.67 | 0.00 |
-| Retrieval Recall | 1.00 | 1.00 | 0.00 |
+| Latency (s) | 26.36 | 26.00 | 22.82 |
+| Tokens | 5,152 | 4,477 | 4,340 |
+| Correctness | 3 | 3 | 1 |
+| Completeness | 3 | 2 | 1 |
+| Faithfulness | 5 | 3 | 4 |
+| Retrieval Prec | 0.50 | 1.00 | 0.00 |
+| Retrieval Recall | 0.50 | 0.50 | 0.00 |
 | Actual Agents | 2 | 2 | 2 |
 | Agent Coverage | 1 | 1 | 1 |
 | Coordination Points | 2 | 2 | 2 |
 | Coordination Success | 0 | 0 | 0 |
 | Grounded Hop Coverage | 0.333 | 0.333 | 0 |
 | Has Tool Trace | 1 | 1 | 1 |
-| Hop Coverage | 0.333 | 0.333 | 0.333 |
+| Hop Coverage | 0.667 | 0.667 | 0.333 |
 | Is Coordination | 1 | 1 | 1 |
 | Is Easy | 0 | 0 | 0 |
-| Matched Hops | 1 | 1 | 1 |
+| Matched Hops | 2 | 2 | 1 |
 | Matched Tools | 2 | 2 | 2 |
 | Required Agents | 2 | 2 | 2 |
 | Required Hops | 3 | 3 | 3 |
@@ -323,161 +325,182 @@ What I ...
 
 **Answers:**
 
-- **Pydantic AI**: I can do that, but I can’t finish the query right now because I’ve already used the allowed tool calls for this session (I ran schema PRAGMAs). To produce a grounded list I need one query against the vulnerability_scans + recent_deploys (and services) tables. Below I show:
+- **Pydantic AI**: Short answer
+- I can confirm two services have open critical/high vulnerabilities: 
+  - SVC-003 — payment-service (1 high, open)  
+  - SVC-004 — order-service (1 critical, open)  
+- I cannot yet confirm whether those same services have recent deploys without change tickets because my attempt to fetc...
+- **LangGraph**: Answer: None — there are no services that match both criteria.
 
-- what I would look for (...
-- **LangGraph**: I don’t yet have the data needed to produce a grounded list — the schema for the relevant tables is available, but I haven’t queried the vulnerability or recent-deploy rows themselves. To answer precisely I need to run two queries (one against the security scans, one against recent_deploys) and inte...
-- **smolagents**: I don’t yet have the query results because the previous attempt used the wrong column name. To get a grounded answer I need to run one SQL query that joins services, vulnerability_scans and recent_deploys. Here’s the correct query (it uses the actual column names shown in the schema):
-
-SQL to run:
-S...
+Evidence:
+- I queried vulnerability_scans for open Critical or High findings (severity IN ('Critical','High') AND LOWER(status)='open'). That returned 0 rows (no open Critical/High vulnerabilities in the table).
+- Because a service must...
+- **smolagents**: I don’t yet have the query results — I need to run a DB query to get them. Below is the correct single SQL to return services that have both (A) at least one open vulnerability with severity critical or high and (B) at least one recent deploy record with no change ticket. It uses the actual column n...
 
 ### q7: What is the likely root cause of INC-4001, and was proper incident response followed?
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Latency (s) | 52.04 | 31.99 | 6.48 |
-| Tokens | 7,687 | 7,463 | 2,492 |
-| Correctness | 5 | 3 | 1 |
-| Completeness | 4 | 2 | 1 |
-| Faithfulness | 5 | 3 | 1 |
-| Retrieval Prec | 1.00 | 1.00 | 1.00 |
-| Retrieval Recall | 0.33 | 0.33 | 0.17 |
-| Actual Agents | 2 | 1 | 1 |
-| Agent Coverage | 0.667 | 0.333 | 0.333 |
-| Coordination Points | 4 | 4 | 4 |
-| Coordination Success | 0 | 0 | 0 |
-| Grounded Hop Coverage | 0.250 | 0 | 0 |
-| Has Tool Trace | 1 | 1 | 1 |
-| Hop Coverage | 0.750 | 0.500 | 0 |
-| Is Coordination | 1 | 1 | 1 |
-| Is Easy | 0 | 0 | 0 |
-| Matched Hops | 3 | 2 | 0 |
-| Matched Tools | 2 | 1 | 1 |
-| Required Agents | 3 | 3 | 3 |
-| Required Hops | 4 | 4 | 4 |
-| Required Tools Count | 3 | 3 | 3 |
-| Tool Calls Reported | 3 | 3 | 1 |
-| Tool Coverage | 0.667 | 0.333 | 0.333 |
-
-**Answers:**
-
-- **Pydantic AI**: Short answer
-- Likely root cause: a latency/regression introduced by the auth-service deployment (v2.4.1-rc3 at 16:30) that caused upstream auth calls to hit p99 latencies ~8200ms, making payment-service requests fail with 503s.
-- Was incident response proper? Partially — initial detection and comma...
-- **LangGraph**: Short answer
-- Most likely root cause: the auth-service deploy introduced a breaking change or outage that caused payment-service’s upstream auth calls to fail, producing 503s (temporal correlation in the incident title strongly suggests the new auth build caused payment-service to get upstream 503 ...
-- **smolagents**: Calling tools:
-[{'id': 'call_qjhF17uwbYSxob9sbsyt3WhN', 'type': 'function', 'function': {'name': 'query_infrastructure', 'arguments': {'query': "SELECT * FROM incidents WHERE incident_id = 'INC-4001';"}}}]
-
-### q8: Provide a full incident analysis for INC-4002: root cause, security posture assessment, and compliance violations.
-
-| Metric | Pydantic AI | LangGraph | smolagents |
-| --- | --- | --- | --- |
-| Latency (s) | 90.10 | 75.04 | 17.05 |
-| Tokens | 9,420 | 9,406 | 3,086 |
-| Correctness | 1 | 1 | 1 |
-| Completeness | 1 | 2 | 1 |
-| Faithfulness | 5 | 5 | 1 |
-| Retrieval Prec | 0.00 | 0.50 | 0.00 |
-| Retrieval Recall | 0.00 | 0.14 | 0.00 |
+| Latency (s) | 38.15 | 34.11 | 19.96 |
+| Tokens | 10,639 | 7,079 | 3,951 |
+| Correctness | 5 | 1 | 1 |
+| Completeness | 4 | 1 | 1 |
+| Faithfulness | 5 | 5 | 2 |
+| Retrieval Prec | 0.80 | 0.50 | 0.00 |
+| Retrieval Recall | 0.67 | 0.17 | 0.00 |
 | Actual Agents | 2 | 3 | 1 |
 | Agent Coverage | 0.667 | 1 | 0.333 |
-| Coordination Points | 5 | 5 | 5 |
-| Coordination Success | 0 | 1 | 0 |
-| Grounded Hop Coverage | 0 | 0.400 | 0 |
+| Coordination Points | 4 | 4 | 4 |
+| Coordination Success | 0 | 0 | 0 |
+| Grounded Hop Coverage | 0.750 | 0 | 0 |
 | Has Tool Trace | 1 | 1 | 1 |
-| Hop Coverage | 0.600 | 0.800 | 0 |
+| Hop Coverage | 0.750 | 0 | 0 |
 | Is Coordination | 1 | 1 | 1 |
 | Is Easy | 0 | 0 | 0 |
-| Matched Hops | 3 | 4 | 0 |
+| Matched Hops | 3 | 0 | 0 |
 | Matched Tools | 2 | 3 | 1 |
 | Required Agents | 3 | 3 | 3 |
-| Required Hops | 5 | 5 | 5 |
+| Required Hops | 4 | 4 | 4 |
 | Required Tools Count | 3 | 3 | 3 |
 | Tool Calls Reported | 3 | 3 | 1 |
 | Tool Coverage | 0.667 | 1 | 0.333 |
 
 **Answers:**
 
-- **Pydantic AI**: Short version / status
-- I could not retrieve INC-4002 records — the tooling hit the 3-call budget before we returned incident data. I therefore cannot state a definitive, evidence-backed root cause or exact compliance violations for INC-4002.
-- Below I give: (A) the minimum queries / checks to run ...
-- **LangGraph**: Short version / bottom line
-- I could not retrieve incident-specific records for INC-4002 because the read-only queries were not executed (tool budget exhausted). I therefore can’t state a confirmed root cause or list actual security/compliance findings — only a prioritized, evidence-driven analysis...
-- **smolagents**: Calling tool to fetch incident, timeline, service, deploy and cluster details for INC-4002 (1/3)...
+- **Pydantic AI**: Short answer
+- Likely root cause: a performance/regression in auth-service caused by the 16:30 deploy (v2.4.1-rc3) that increased p99 latency (~8.2s vs ~120ms baseline), causing payment-service (which synchronously depends on auth) to return 503s.
+- Was response proper? Partially. The incident was d...
+- **LangGraph**: Short answer
+- I cannot definitively say the root cause of INC-4001 or whether the runbook was followed because I was unable to retrieve any incident-specific records (incidents row, timeline, deploys, scans, or logs) before the tool budget was exhausted.
+- Based on common failure modes and our runb...
+- **smolagents**: I can run up to 3 read-only queries against the incident DB to determine the root cause and evaluate the response. Plan:
+
+1) Fetch the INC-4001 incident record (incidents table).
+2) Fetch the incident timeline entries (incident_timeline) ordered by timestamp.
+3) Fetch recent deploys for the affected...
+
+### q8: Provide a full incident analysis for INC-4002: root cause, security posture assessment, and compliance violations.
+
+| Metric | Pydantic AI | LangGraph | smolagents |
+| --- | --- | --- | --- |
+| Latency (s) | 59.12 | 38.94 | 25.62 |
+| Tokens | 9,027 | 6,417 | 5,529 |
+| Correctness | 1 | 2 | 1 |
+| Completeness | 2 | 2 | 1 |
+| Faithfulness | 5 | 5 | 4 |
+| Retrieval Prec | 0.50 | 0.50 | 0.50 |
+| Retrieval Recall | 0.14 | 0.14 | 0.14 |
+| Actual Agents | 3 | 3 | 3 |
+| Agent Coverage | 1 | 1 | 1 |
+| Coordination Points | 5 | 5 | 5 |
+| Coordination Success | 1 | 0 | 0 |
+| Grounded Hop Coverage | 0.400 | 0.200 | 0 |
+| Has Tool Trace | 1 | 1 | 1 |
+| Hop Coverage | 0.800 | 0.400 | 0 |
+| Is Coordination | 1 | 1 | 1 |
+| Is Easy | 0 | 0 | 0 |
+| Matched Hops | 4 | 2 | 0 |
+| Matched Tools | 3 | 3 | 3 |
+| Required Agents | 3 | 3 | 3 |
+| Required Hops | 5 | 5 | 5 |
+| Required Tools Count | 3 | 3 | 3 |
+| Tool Calls Reported | 3 | 3 | 3 |
+| Tool Coverage | 1 | 1 | 1 |
+
+**Answers:**
+
+- **Pydantic AI**: Summary / constraints
+- I attempted to fetch incident and security data but the tool call budget was exhausted before I could retrieve INC-4002’s records, timeline, access logs, vulnerability scans, firewall changes, and recent deploy history.
+- I was able to retrieve relevant runbook/policy excerpt...
+- **LangGraph**: Short answer / status
+- I attempted to pull incident and security evidence but the automated queries failed (tool errors). I do not have the incident row, timeline entries, access log slices, vulnerability scan results or firewall-change history for INC-4002 available to me in this session, so I can...
+- **smolagents**: I'll query the incident, timeline, service, cluster, recent deploys, access logs, vulnerability scans, and firewall rules for INC-4002 (two read-only queries).
+Calling tools:
+1/2: query_infrastructure
+Query:
+SELECT * FROM incidents WHERE incident_id='INC-4002';
+SELECT * FROM incident_timeline WHERE ...
 
 ### q9: If we need to remediate INC-4002, what is the sequence of actions and who needs to approve?
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Latency (s) | 39.27 | 29.45 | 5.03 |
-| Tokens | 5,693 | 5,374 | 2,095 |
-| Correctness | 3 | 3 | 2 |
+| Latency (s) | 25.58 | 30.91 | 7.12 |
+| Tokens | 9,413 | 7,409 | 2,414 |
+| Correctness | 4 | 3 | 1 |
 | Completeness | 3 | 2 | 1 |
-| Faithfulness | 4 | 3 | 4 |
-| Retrieval Prec | 0.00 | 0.50 | 0.00 |
-| Retrieval Recall | 0.00 | 0.14 | 0.00 |
-| Actual Agents | 1 | 1 | 1 |
-| Agent Coverage | 0.333 | 0.333 | 0.333 |
+| Faithfulness | 4 | 5 | 1 |
+| Retrieval Prec | 0.33 | 0.75 | 0.00 |
+| Retrieval Recall | 0.14 | 0.43 | 0.00 |
+| Actual Agents | 2 | 2 | 1 |
+| Agent Coverage | 0.667 | 0.667 | 0.333 |
 | Coordination Points | 4 | 4 | 4 |
 | Coordination Success | 0 | 0 | 0 |
-| Grounded Hop Coverage | 0 | 0 | 0 |
+| Grounded Hop Coverage | 0 | 0.250 | 0 |
 | Has Tool Trace | 1 | 1 | 1 |
-| Hop Coverage | 0.750 | 0.750 | 0 |
+| Hop Coverage | 1 | 0.500 | 0 |
 | Is Coordination | 1 | 1 | 1 |
 | Is Easy | 0 | 0 | 0 |
-| Matched Hops | 3 | 3 | 0 |
-| Matched Tools | 1 | 1 | 1 |
+| Matched Hops | 4 | 2 | 0 |
+| Matched Tools | 2 | 2 | 1 |
 | Required Agents | 3 | 3 | 3 |
 | Required Hops | 4 | 4 | 4 |
 | Required Tools Count | 3 | 3 | 3 |
 | Tool Calls Reported | 3 | 3 | 1 |
-| Tool Coverage | 0.333 | 0.333 | 0.333 |
+| Tool Coverage | 0.667 | 0.667 | 0.333 |
 
 **Answers:**
 
-- **Pydantic AI**: Short answer (summary)
-- Immediate containment: block/restrict 198.51.100.0/24 and/or remove FW-404 — approval: incident commander (dave@nimbusops.io) or on-call network engineer with explicit emergency change authorization from the incident commander/security lead.
-- Investigation & evidence collec...
-- **LangGraph**: Short answer
-- High-level sequence: 1) Confirm & contain → 2) Mitigate (quick fix) → 3) Identify root cause → 4) Remediate (rollback/patch/scale/config change) → 5) Validate & monitor → 6) Close & follow-up (postmortem).
-- Who must approve: immediate mitigations can be authorized by the Incident Com...
-- **smolagents**: I looked up INC-4002 (order-service degraded performance in eu-west-1; sev2; investigating; commander dave@nimbusops.io). To recommend a grounded remediation sequence and who must approve, I need two pieces of info: the service runbook/playbook for SVC-004 (order-service) and the approval policy for...
+- **Pydantic AI**: Summary of evidence (from INC-4002 timeline)
+- p95 latency on order-service (SVC-004) spiked to 4500ms in eu-west-1 (monitoring alert).
+- Security detected anomalous traffic to SVC-004: source 198.51.100.0/24, high anomaly scores.
+- Firewall rule FW-404 opened port 8083 to 198.51.100.0/24 by bot-sca...
+- **LangGraph**: Summary (grounded to runbook + incident record)
+- INC-4002: "order-service degraded performance in eu-west-1" — current status investigating, severity = sev2, incident commander = dave@nimbusops.io.
+- Relevant policies:
+  - Emergency change process: the incident commander must explicitly authorize a...
+- **smolagents**: Calling tools:
+[{"id":"call_1","type":"function","function":{"name":"query_infrastructure","arguments":{"query":"SELECT incident_id, title, severity, status, affected_service_id, opened_at, identified_at, resolved_at, commander, root_cause FROM incidents WHERE incident_id = 'INC-4002' LIMIT 1;"}}}]
 
 ### q10: Should INC-4002 be escalated from sev2 to sev1? Justify with evidence from the data and policies.
 
 | Metric | Pydantic AI | LangGraph | smolagents |
 | --- | --- | --- | --- |
-| Latency (s) | 30.40 | 56.49 | 5.88 |
-| Tokens | 7,894 | 8,220 | 2,487 |
-| Correctness | 1 | 2 | 1 |
+| Latency (s) | 41.18 | 31.87 | 14.55 |
+| Tokens | 7,657 | 6,618 | 2,747 |
+| Correctness | 3 | 4 | 1 |
 | Completeness | 2 | 2 | 1 |
 | Faithfulness | 5 | 5 | 1 |
-| Retrieval Prec | 0.50 | 1.00 | 1.00 |
-| Retrieval Recall | 0.17 | 0.17 | 0.17 |
-| Actual Agents | 1 | 3 | 1 |
-| Agent Coverage | 0.333 | 1 | 0.333 |
+| Retrieval Prec | 1.00 | 0.50 | 0.00 |
+| Retrieval Recall | 0.33 | 0.33 | 0.00 |
+| Actual Agents | 3 | 2 | 1 |
+| Agent Coverage | 1 | 0.667 | 0.333 |
 | Coordination Points | 3 | 3 | 3 |
-| Coordination Success | 0 | 1 | 0 |
-| Grounded Hop Coverage | 0.250 | 0 | 0 |
+| Coordination Success | 1 | 0 | 0 |
+| Grounded Hop Coverage | 0.250 | 0.250 | 0 |
 | Has Tool Trace | 1 | 1 | 1 |
-| Hop Coverage | 0.750 | 1 | 0 |
+| Hop Coverage | 1 | 0.750 | 0 |
 | Is Coordination | 1 | 1 | 1 |
 | Is Easy | 0 | 0 | 0 |
-| Matched Hops | 3 | 4 | 0 |
-| Matched Tools | 1 | 3 | 1 |
+| Matched Hops | 4 | 3 | 0 |
+| Matched Tools | 3 | 2 | 1 |
 | Required Agents | 3 | 3 | 3 |
 | Required Hops | 4 | 4 | 4 |
 | Required Tools Count | 3 | 3 | 3 |
 | Tool Calls Reported | 3 | 3 | 1 |
-| Tool Coverage | 0.333 | 1 | 0.333 |
+| Tool Coverage | 1 | 0.667 | 0.333 |
 
 **Answers:**
 
-- **Pydantic AI**: Short answer
-- Not yet — there isn’t enough evidence in the data we currently have to justify escalating INC-4002 from sev2 → sev1. The incident metadata shows a sev2 investigating ticket opened ~24 hours ago, but we’re missing the operational and policy evidence required to justify an escalation.
+- **Pydantic AI**: Short answer: I cannot definitively say “yes” or “no” because I don’t have the incident data (INC-4002 row, timeline, service, access logs, dependency info). Based on NimbusOps policy, escalation to Sev1 is required if any of several specific triggers are met — I list them below and give the exact e...
+- **LangGraph**: Short answer: Yes — escalate INC-4002 from sev2 to sev1.
 
-...
-- **LangGraph**: Short answer: I cannot confidently recommend escalating INC-4002 from sev2 → sev1 with the current evidence available. The incident runbook defines clear, objective escalation triggers (see below), but I don’t have the incident’s details (status, timestamps, timeline entries, access-log anomaly scor...
-- **smolagents**: I will check the incident record and the escalation policy to decide. I'll need to look up INC-4002 and the severity/escalation policy. May I query the incidents database and the policy table?
+Evidence:
+- Incident record (infrastructure lookup):
+  - incident_id: INC-4002
+  - title: "order-service degraded performance in eu-west-1"
+  - severity: sev2
+  - status: investigating
+  - opened_at: 2026-02-10T14:30:00Z
+  - identified_at: NU...
+- **smolagents**: Calling tool to fetch the incident record (1/3)...
