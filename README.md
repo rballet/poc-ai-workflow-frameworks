@@ -35,6 +35,9 @@ uv run python scripts/run_eval.py --all --scenario agentic_sql_qa --mode capabil
 # Run multi-agent coordination scenario (tests native multi-agent orchestration)
 uv run python scripts/run_eval.py --all --scenario multi_agent_coordination --mode capability
 
+# Run multiple times and average results (variance-aware benchmarking)
+uv run python scripts/run_eval.py --all --scenario multi_agent_coordination --mode capability --runs 3
+
 # Run without LLM code review (faster, no extra API cost)
 uv run python scripts/run_eval.py --all --scenario rag_qa --skip-code-review
 

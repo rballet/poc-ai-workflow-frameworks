@@ -25,4 +25,4 @@ Multi-agent incident response requiring coordination across infrastructure, secu
 - Embedding: `text-embedding-3-small`
 - LLM: `gpt-5-mini`
 - Baseline mode: single agent, 3 tool calls max
-- Capability mode: multi-agent, 15 tool calls / 15 steps max
+- Capability mode: multi-agent, 30 tool calls / 15 steps max

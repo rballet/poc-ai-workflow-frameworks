@@ -152,7 +152,20 @@ To ensure a fair comparison, all frameworks share core parameters per scenario. 
 | Top-k retrieval | 3 | 3 | 4 | 4 |
 | Database seed file | — | — | `data/seed.sql` | `data/seed.sql` |
 | Capability max_steps | — | 4 | 10 | 15 |
-| Capability max_tool_calls | — | — | 10 | 15 |
+| Capability max_tool_calls | — | — | 10 | 30 |
+
+## Multi-Run Averaging (`--runs N`)
+
+When `--runs N` is used with N > 1, the harness evaluates each framework N times and produces an averaged result:
+
+- Per-question scores (correctness, completeness, faithfulness, retrieval precision/recall, latency) are averaged across runs.
+- Token counts and cost are summed across runs.
+- A representative answer (closest to mean correctness) is selected for each question.
+- Per-question `correctness_stddev` and run-level `correctness_run_stddev`, `completeness_run_stddev`, `faithfulness_run_stddev` are tracked.
+- Individual run results are saved alongside the aggregated file (e.g. `_run1.json`, `_run2.json`).
+- The comparison report shows `±stddev` notation when run_count > 1.
+
+This is useful because GPT-5-mini (and GPT-5 family reasoning models) do not support `temperature=0`, making results inherently non-deterministic.
 
 ## Output Format
 
