@@ -199,6 +199,13 @@ def generate_comparison_report(results: list[dict]) -> str:
         lines.append(f"Profile: {results[0].get('evaluation_profile', 'default')}")
         n_questions = len(results[0].get("questions", []))
         lines.append(f"Questions: {n_questions}")
+        # Show run count if any result was averaged
+        run_counts = [int(r.get("run_count", 1)) for r in results]
+        if any(rc > 1 for rc in run_counts):
+            parts = []
+            for r, rc in zip(results, run_counts):
+                parts.append(f"{r['framework_name']}: {rc}")
+            lines.append(f"Runs per framework: {', '.join(parts)}")
     lines.append("")
 
     # --- Summary table ---
@@ -220,16 +227,30 @@ def generate_comparison_report(results: list[dict]) -> str:
         ("Avg Retrieval Recall", "avg_retrieval_recall", ".2f"),
     ]
 
+    # Map avg metric key to its stddev key in extra_aggregates
+    _stddev_keys = {
+        "avg_correctness": "correctness_run_stddev",
+        "avg_completeness": "completeness_run_stddev",
+        "avg_faithfulness": "faithfulness_run_stddev",
+    }
+
     for label, key, fmt in metrics:
         row = [label]
         for r in results:
             val = r.get(key, 0)
             if fmt == ",d":
-                row.append(f"{int(val):,}")
+                cell = f"{int(val):,}"
             elif fmt == ".4f" and "cost" in key.lower():
-                row.append(f"${val:{fmt}}")
+                cell = f"${val:{fmt}}"
             else:
-                row.append(f"{val:{fmt}}")
+                cell = f"{val:{fmt}}"
+            # Append ±stddev for multi-run averaged results
+            stddev_key = _stddev_keys.get(key)
+            if stddev_key and int(r.get("run_count", 1)) > 1:
+                stddev_val = _numeric((r.get("extra_aggregates") or {}).get(stddev_key))
+                if stddev_val is not None:
+                    cell += f" ±{stddev_val:.2f}"
+            row.append(cell)
         lines.append("| " + " | ".join(row) + " |")
 
     lines.append("")

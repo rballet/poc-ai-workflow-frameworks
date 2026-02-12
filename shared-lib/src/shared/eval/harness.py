@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import statistics
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -76,6 +77,9 @@ class FrameworkEvaluation:
     extra_aggregates: dict[str, float] = field(default_factory=dict)
     # Code quality (per-framework, not per-question)
     code_quality: CodeQualityEvaluation | None = None
+    # Multi-run tracking
+    run_id: int = 0
+    run_count: int = 1
 
 
 def _compute_extra_aggregates(
@@ -108,6 +112,133 @@ def _compute_aggregates(evaluation: FrameworkEvaluation) -> None:
     evaluation.extra_aggregates = _compute_extra_aggregates(
         [q.extra_metrics for q in evaluation.questions]
     )
+
+
+def average_evaluations(runs: list[FrameworkEvaluation]) -> FrameworkEvaluation:
+    """Average multiple evaluation runs into one aggregated result.
+
+    Per-question scores are averaged across runs.  Tokens and cost are summed
+    (total spend across all runs).  The ``actual_answer`` from the run whose
+    correctness is closest to the per-question mean is kept as the
+    representative answer.
+    """
+    if not runs:
+        raise ValueError("Cannot average zero evaluations")
+    if len(runs) == 1:
+        result = runs[0]
+        result.run_id = 0
+        result.run_count = 1
+        return result
+
+    first = runs[0]
+    n_runs = len(runs)
+
+    # Group question evaluations by question_id across runs
+    q_by_id: dict[str, list[QuestionEvaluation]] = {}
+    for run in runs:
+        for qe in run.questions:
+            q_by_id.setdefault(qe.question_id, []).append(qe)
+
+    averaged_questions: list[QuestionEvaluation] = []
+    correctness_scores_all: list[float] = []
+
+    for qid, qe_list in q_by_id.items():
+        # Compute means for score fields
+        mean_correctness = statistics.mean(q.correctness_score for q in qe_list)
+        mean_completeness = statistics.mean(q.completeness_score for q in qe_list)
+        mean_faithfulness = statistics.mean(q.faithfulness_score for q in qe_list)
+        mean_r_precision = statistics.mean(q.retrieval_precision for q in qe_list)
+        mean_r_recall = statistics.mean(q.retrieval_recall for q in qe_list)
+        mean_latency = statistics.mean(q.latency_seconds for q in qe_list)
+
+        correctness_scores_all.append(mean_correctness)
+
+        # Sum tokens and cost (total spend)
+        sum_prompt = sum(q.prompt_tokens for q in qe_list)
+        sum_completion = sum(q.completion_tokens for q in qe_list)
+        sum_total = sum(q.total_tokens for q in qe_list)
+        sum_cost = sum(q.estimated_cost_usd for q in qe_list)
+
+        # Pick the representative answer (closest correctness to mean)
+        representative = min(
+            qe_list, key=lambda q: abs(q.correctness_score - mean_correctness)
+        )
+
+        # Average extra_metrics
+        extra_keys: set[str] = set()
+        for q in qe_list:
+            extra_keys.update(q.extra_metrics.keys())
+        avg_extra: dict[str, float | int | bool] = {}
+        for key in extra_keys:
+            values = []
+            for q in qe_list:
+                v = q.extra_metrics.get(key)
+                if isinstance(v, bool):
+                    values.append(float(v))
+                elif isinstance(v, (int, float)):
+                    values.append(float(v))
+            if values:
+                avg_extra[key] = statistics.mean(values)
+
+        # Compute per-question stddev for correctness
+        if len(qe_list) > 1:
+            avg_extra["correctness_stddev"] = statistics.stdev(
+                q.correctness_score for q in qe_list
+            )
+
+        averaged_questions.append(
+            QuestionEvaluation(
+                question_id=qid,
+                question_text=representative.question_text,
+                expected_answer=representative.expected_answer,
+                actual_answer=representative.actual_answer,
+                sources_expected=representative.sources_expected,
+                sources_retrieved=representative.sources_retrieved,
+                latency_seconds=mean_latency,
+                prompt_tokens=sum_prompt,
+                completion_tokens=sum_completion,
+                total_tokens=sum_total,
+                estimated_cost_usd=sum_cost,
+                model_name=representative.model_name,
+                correctness_score=mean_correctness,
+                completeness_score=mean_completeness,
+                faithfulness_score=mean_faithfulness,
+                judge_reasoning=representative.judge_reasoning,
+                retrieval_precision=mean_r_precision,
+                retrieval_recall=mean_r_recall,
+                extra_metrics=avg_extra,
+            )
+        )
+
+    # Build the aggregated evaluation
+    aggregated = FrameworkEvaluation(
+        framework_name=first.framework_name,
+        scenario_name=first.scenario_name,
+        scenario_type=first.scenario_type,
+        evaluation_mode=first.evaluation_mode,
+        evaluation_profile=first.evaluation_profile,
+        questions=averaged_questions,
+        code_quality=first.code_quality,
+        run_id=-1,
+        run_count=n_runs,
+    )
+
+    # Recompute aggregates from averaged questions
+    _compute_aggregates(aggregated)
+
+    # Merge scenario-specific extra_aggregates from _compute_extra_aggregates
+    # (already done by _compute_aggregates above), then add run-level stats
+    if n_runs > 1:
+        for attr, key in [
+            ("avg_correctness", "correctness_run_stddev"),
+            ("avg_completeness", "completeness_run_stddev"),
+            ("avg_faithfulness", "faithfulness_run_stddev"),
+        ]:
+            per_run_values = [getattr(r, attr) for r in runs]
+            aggregated.extra_aggregates[key] = statistics.stdev(per_run_values)
+    aggregated.extra_aggregates["run_count"] = float(n_runs)
+
+    return aggregated
 
 
 async def evaluate_framework(

@@ -20,7 +20,7 @@ sys.path.insert(0, str(ROOT / "shared-lib" / "src"))
 for _framework in ("langgraph", "pydantic_ai", "smolagents"):
     sys.path.insert(0, str(ROOT / "frameworks" / _framework / "src"))
 
-from shared.eval.harness import FrameworkEvaluation, evaluate_framework  # noqa: E402
+from shared.eval.harness import FrameworkEvaluation, average_evaluations, evaluate_framework  # noqa: E402
 from shared.eval.profiles import ProfileContext, get_scenario_profile  # noqa: E402
 from shared.interface import ConfigurableFramework  # noqa: E402
 from shared.retrieval import EmbeddingStore  # noqa: E402
@@ -110,11 +110,24 @@ def get_framework_source(name: str, scenario: str) -> str | None:
     return None
 
 
-def save_results(evaluation: FrameworkEvaluation, output_dir: Path) -> Path:
-    """Save evaluation results to JSON."""
+def save_results(
+    evaluation: FrameworkEvaluation,
+    output_dir: Path,
+    *,
+    run_suffix: str = "",
+) -> Path:
+    """Save evaluation results to JSON.
+
+    Parameters
+    ----------
+    run_suffix:
+        Optional suffix appended before the extension, e.g. ``"_run1"``
+        for individual multi-run results.
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    filename = f"{evaluation.framework_name.lower().replace(' ', '_')}_{evaluation.scenario_name}_{timestamp}.json"
+    fw_slug = evaluation.framework_name.lower().replace(" ", "_")
+    filename = f"{fw_slug}_{evaluation.scenario_name}_{timestamp}{run_suffix}.json"
     output_path = output_dir / filename
 
     data = dataclasses.asdict(evaluation)
@@ -130,70 +143,13 @@ def _print_extra_aggregates(extra_aggregates: dict[str, float]) -> None:
         print(f"  {key}:".ljust(24) + value_str)
 
 
-async def run_single(
-    framework_name: str,
-    scenario: ScenarioDefinition,
-    mode: str,
-    judge_model: str,
-    query_timeout_seconds: float,
-    skip_code_quality: bool = False,
-    skip_code_review: bool = False,
-    embedding_store: EmbeddingStore | None = None,
-) -> FrameworkEvaluation:
-    """Run evaluation for a single framework."""
-    framework = get_framework(
-        framework_name,
-        scenario_name=scenario.name,
-        embedding_store=embedding_store,
-    )
-    mode_config = scenario.modes.get(mode, {})
-    if isinstance(framework, ConfigurableFramework):
-        framework.configure(
-            mode=mode,
-            scenario_name=scenario.name,
-            scenario_type=scenario.scenario_type,
-            scenario_config=scenario.config,
-            mode_config=mode_config,
-        )
+def _print_evaluation(evaluation: FrameworkEvaluation) -> None:
+    """Print evaluation results to stdout."""
+    label = evaluation.framework_name
+    if evaluation.run_count > 1:
+        label += f" (averaged over {evaluation.run_count} runs)"
 
-    profile_key = scenario.evaluation.get("profile", "default")
-    scenario_profile = get_scenario_profile(profile_key)
-    profile_context = ProfileContext(
-        scenario_name=scenario.name,
-        scenario_type=scenario.scenario_type,
-        mode=mode,
-        profile_key=profile_key,
-        profile_config=scenario.evaluation.get("profile_config", {}),
-    )
-
-    print(f"\n{'='*60}")
-    print(f"Evaluating: {framework.name}")
-    print(f"Scenario: {scenario.name} ({len(scenario.questions)} questions)")
-    print(f"Mode: {mode} | Type: {scenario.scenario_type} | Profile: {profile_key}")
-    print(f"{'='*60}")
-
-    source_path = None
-    if not skip_code_quality:
-        source_path = get_framework_source(framework_name, scenario.name)
-
-    evaluation = await evaluate_framework(
-        framework=framework,
-        documents=scenario.documents,
-        questions=scenario.questions,
-        scenario_name=scenario.name,
-        scenario_type=scenario.scenario_type,
-        evaluation_mode=mode,
-        judge_model=judge_model,
-        scenario_profile=scenario_profile,
-        profile_context=profile_context,
-        source_path=source_path,
-        framework_key=framework_name,
-        scenario_description=scenario.description,
-        skip_code_review=skip_code_review,
-        query_timeout_seconds=query_timeout_seconds,
-    )
-
-    print(f"\nResults for {evaluation.framework_name}:")
+    print(f"\nResults for {label}:")
     print(f"  Avg Latency:           {evaluation.avg_latency:.2f}s")
     print(f"  Total Tokens:          {evaluation.total_tokens}")
     print(f"  Total Cost:            ${evaluation.total_cost_usd:.4f}")
@@ -227,10 +183,132 @@ async def run_single(
             print(f"    Documentation:       {cr.documentation}/5")
             print(f"    Abstraction:         {cr.abstraction}/5")
 
-    output_path = save_results(evaluation, RESULTS_DIR)
+
+async def run_single(
+    framework_name: str,
+    scenario: ScenarioDefinition,
+    mode: str,
+    judge_model: str,
+    query_timeout_seconds: float,
+    skip_code_quality: bool = False,
+    skip_code_review: bool = False,
+    embedding_store: EmbeddingStore | None = None,
+    *,
+    run_id: int = 0,
+    num_runs: int = 1,
+) -> FrameworkEvaluation:
+    """Run evaluation for a single framework."""
+    framework = get_framework(
+        framework_name,
+        scenario_name=scenario.name,
+        embedding_store=embedding_store,
+    )
+    mode_config = scenario.modes.get(mode, {})
+    if isinstance(framework, ConfigurableFramework):
+        framework.configure(
+            mode=mode,
+            scenario_name=scenario.name,
+            scenario_type=scenario.scenario_type,
+            scenario_config=scenario.config,
+            mode_config=mode_config,
+        )
+
+    profile_key = scenario.evaluation.get("profile", "default")
+    scenario_profile = get_scenario_profile(profile_key)
+    profile_context = ProfileContext(
+        scenario_name=scenario.name,
+        scenario_type=scenario.scenario_type,
+        mode=mode,
+        profile_key=profile_key,
+        profile_config=scenario.evaluation.get("profile_config", {}),
+    )
+
+    run_label = f" (run {run_id + 1}/{num_runs})" if num_runs > 1 else ""
+    print(f"\n{'='*60}")
+    print(f"Evaluating: {framework.name}{run_label}")
+    print(f"Scenario: {scenario.name} ({len(scenario.questions)} questions)")
+    print(f"Mode: {mode} | Type: {scenario.scenario_type} | Profile: {profile_key}")
+    print(f"{'='*60}")
+
+    # Code quality only on the first run (static analysis is deterministic)
+    source_path = None
+    if not skip_code_quality and run_id == 0:
+        source_path = get_framework_source(framework_name, scenario.name)
+
+    evaluation = await evaluate_framework(
+        framework=framework,
+        documents=scenario.documents,
+        questions=scenario.questions,
+        scenario_name=scenario.name,
+        scenario_type=scenario.scenario_type,
+        evaluation_mode=mode,
+        judge_model=judge_model,
+        scenario_profile=scenario_profile,
+        profile_context=profile_context,
+        source_path=source_path,
+        framework_key=framework_name,
+        scenario_description=scenario.description,
+        skip_code_review=skip_code_review,
+        query_timeout_seconds=query_timeout_seconds,
+    )
+    evaluation.run_id = run_id
+    evaluation.run_count = 1
+
+    _print_evaluation(evaluation)
+
+    # Save individual run results
+    run_suffix = f"_run{run_id + 1}" if num_runs > 1 else ""
+    output_path = save_results(evaluation, RESULTS_DIR, run_suffix=run_suffix)
     print(f"  Results saved to:      {output_path}")
 
     return evaluation
+
+
+async def run_with_repeats(
+    framework_name: str,
+    scenario: ScenarioDefinition,
+    mode: str,
+    judge_model: str,
+    query_timeout_seconds: float,
+    num_runs: int = 1,
+    skip_code_quality: bool = False,
+    skip_code_review: bool = False,
+    embedding_store: EmbeddingStore | None = None,
+) -> FrameworkEvaluation:
+    """Run evaluation N times and return the averaged result."""
+    runs: list[FrameworkEvaluation] = []
+    for i in range(num_runs):
+        evaluation = await run_single(
+            framework_name,
+            scenario,
+            mode,
+            judge_model,
+            query_timeout_seconds,
+            skip_code_quality=skip_code_quality,
+            skip_code_review=skip_code_review,
+            embedding_store=embedding_store,
+            run_id=i,
+            num_runs=num_runs,
+        )
+        runs.append(evaluation)
+
+    if num_runs <= 1:
+        return runs[0]
+
+    # Average across runs
+    aggregated = average_evaluations(runs)
+    # Carry code quality from first run
+    aggregated.code_quality = runs[0].code_quality
+
+    print(f"\n{'='*60}")
+    print(f"AGGREGATED ({num_runs} runs)")
+    print(f"{'='*60}")
+    _print_evaluation(aggregated)
+
+    output_path = save_results(aggregated, RESULTS_DIR)
+    print(f"  Aggregated results saved to: {output_path}")
+
+    return aggregated
 
 
 FRAMEWORKS = ["pydantic_ai", "langgraph", "smolagents"]
@@ -272,6 +350,12 @@ async def main():
         action="store_true",
         help="Disable shared embedding store (each framework embeds independently)",
     )
+    parser.add_argument(
+        "--runs",
+        type=int,
+        default=1,
+        help="Number of evaluation runs per framework (averaged for N>1)",
+    )
     args = parser.parse_args()
 
     if not args.framework and not args.all:
@@ -285,17 +369,21 @@ async def main():
         embedding_store = create_embedding_store(scenario)
         print(f"  Ingested {len(scenario.documents)} documents, store ready.")
 
+    if args.runs > 1:
+        print(f"  Multi-run mode: {args.runs} runs per framework")
+
     frameworks_to_run = FRAMEWORKS if args.all else [args.framework]
     evaluations: list[FrameworkEvaluation] = []
 
     for fw in frameworks_to_run:
         try:
-            evaluation = await run_single(
+            evaluation = await run_with_repeats(
                 fw,
                 scenario,
                 args.mode,
                 args.judge_model,
                 args.query_timeout_seconds,
+                num_runs=args.runs,
                 skip_code_quality=args.skip_code_quality,
                 skip_code_review=args.skip_code_review,
                 embedding_store=embedding_store,

@@ -66,10 +66,10 @@ questions:
   - id: q4
     text: "Was the most recent deploy of auth-service compliant with the change management policy?"
     expected_answer: |
-      No, the auth-service deploy (DEP-102, image auth:v2.4.1-rc3) violated the change management policy in two ways:
-      1. Deployed on Friday 2026-02-10 at 16:30 UTC -- this is during the Friday freeze window (after 14:00 UTC)
-      2. No change ticket was filed (change_ticket is NULL) -- all production deploys require a change ticket
-      Additionally, auth-service is a critical tier service requiring 2 approvers, making the missing ticket even more significant.
+      No, the auth-service deploy (DEP-102, image auth:v2.4.1-rc3) violated the change management policy:
+      1. No change ticket was filed (change_ticket is NULL) -- all production deploys require a change ticket
+      2. Auth-service is a critical tier service requiring 2 approvers, making the missing ticket a significant violation
+      3. The deploy at 2026-02-10T16:30 UTC by bob@nimbusops.io triggered an incident (INC-4001) with a ~90 min rollback, exceeding the 15-minute rollback SLA for critical tier services
     expected_sources:
       - recent_deploys
       - change_management_policy.md
@@ -83,12 +83,12 @@ questions:
         - lookup_runbook
       coordination_points: 2
       required_hops:
-        - id: deploy_timing
-          any_of: ["16:30", "friday", "freeze"]
-          source: recent_deploys
         - id: missing_ticket
           any_of: ["no change ticket", "NULL", "no ticket", "missing ticket"]
           source: recent_deploys
+        - id: critical_tier
+          any_of: ["critical", "2 approvers", "critical tier"]
+          source: services
         - id: policy_violation
           any_of: ["policy violation", "not compliant", "violated", "non-compliant"]
           source: change_management_policy.md
