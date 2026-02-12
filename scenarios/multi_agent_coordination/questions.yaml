@@ -159,7 +159,7 @@ questions:
       Incident response assessment:
       - Commander assigned within 3 minutes (opened 17:15, commander at 17:18) -- COMPLIANT with 5-minute SLA
       - Identity team (auth-service owners) were NOT paged until 18:00 -- 45 minute delay. Per Sev1 runbook, ALL affected service owners must be paged immediately -- NON-COMPLIANT
-      - The deploy itself violated change management policy: no change ticket, deployed during Friday freeze window
+      - The deploy itself violated change management policy: no change ticket was filed (required for all production deploys), and auth-service is critical tier requiring 2 approvers
 
       Rollback was initiated at 18:00 (confirmed by timeline entry TL-004).
     expected_sources:
@@ -191,7 +191,7 @@ questions:
           any_of: ["45 minute", "not paged", "delay", "Identity team"]
           source: incident_timeline
         - id: change_violation
-          any_of: ["no change ticket", "Friday freeze", "policy violation"]
+          any_of: ["no change ticket", "missing ticket", "policy violation", "2 approvers"]
           source: change_management_policy.md
 
   - id: q8
