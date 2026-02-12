@@ -46,6 +46,27 @@ Uses CrewAI's native tool-calling with two custom tools:
 - `Agent(max_iter=max_steps+2)` controls iteration budget; runtime enforces `max_tool_calls`
 - Tools instantiated per query (runtime.start_run resets state each time)
 
+## Multi-Agent Coordination Architecture (`multi_agent_coordination.py`)
+Uses CrewAI's `Process.hierarchical` for multi-agent coordination:
+
+### Baseline mode
+Single agent with all 3 domain tools (query_infrastructure, query_security, lookup_runbook).
+
+### Capability mode
+Hierarchical Crew with coordinator manager and three specialist agents:
+1. **Infrastructure Specialist** — `QueryInfrastructureTool` for service, cluster, deployment data
+2. **Security Specialist** — `QuerySecurityTool` for vulnerability, firewall, access log data
+3. **Runbook Specialist** — `LookupRunbookTool` for operations documents
+4. **Coordinator** — `manager_agent` that delegates to specialists and synthesizes answers
+
+### Key patterns
+- Tools extend `crewai.tools.BaseTool` same as agentic_sql_qa
+- `Process.hierarchical` with `manager_agent=coordinator` handles delegation automatically
+- Nested sub-Crews approach was too slow (253s avg, most timeouts) — `Process.hierarchical` is the right pattern
+- Specialist agents have `max_iter=8` for sufficient iteration budget
+- Coordinator has `allow_delegation=True` (required for hierarchical delegation)
+- Hierarchical approach still has high latency for complex multi-hop questions (many timeout at 300s)
+
 ## Notes
 - Model specified as `"openai/gpt-5-mini"` (LiteLLM provider/model format)
 - `crew.akickoff()` does NOT exist in v1.6.1 — use `crew.kickoff_async()` instead

@@ -108,3 +108,30 @@ Existing frameworks: pydantic_ai, langgraph, smolagents — all fully implemente
 - `Agent(max_iter=N)` controls the iteration limit; set to `max_steps + 2` for buffer
 - Tools are instantiated per query (fresh for each run since runtime.start_run resets state)
 - Some questions hit OpenAI "invalid_prompt" content policy errors — this is an OpenAI API issue, not our code
+
+## FW-004: CrewAI multi_agent_coordination implementation (2026-02-12)
+
+### What was implemented
+- `frameworks/crewai/src/impl_crewai/multi_agent_coordination.py` — multi-agent coordination with CrewAI
+- Three custom tools: `QueryInfrastructureTool`, `QuerySecurityTool`, `LookupRunbookTool` (all extend `BaseTool`)
+- Baseline: single agent with all 3 tools
+- Capability: `Process.hierarchical` with coordinator as `manager_agent` + 3 specialist agents
+
+### Files changed
+- `frameworks/crewai/src/impl_crewai/multi_agent_coordination.py` — new
+
+### Results
+- Baseline: correctness 2.4/5, completeness 2.1/5, faithfulness 2.4/5, avg latency 65s, tokens 475K
+- Capability (hierarchical): correctness 1.0/5, avg latency 253s — most questions timeout at 300s
+- Only 2/10 questions answered in capability mode (q1 simple query, q6 coordination query)
+- CrewAI's hierarchical process is very slow for complex multi-tool coordination questions
+
+### Learnings and gotchas
+- First approach used nested sub-Crews inside tool `_run()` methods — caused 253s avg latency, most timeouts
+- Refactored to `Process.hierarchical` with `manager_agent` — slightly better but still slow for complex questions
+- `LLM()` returns provider-specific subclass (e.g. `OpenAILLM`), not base `LLM` class — use `Any` type annotation for tool fields
+- `Process.hierarchical` requires the task to NOT be assigned to an agent (no `agent=` on Task)
+- Specialist agents need their own `max_iter` budget for tool calling within hierarchical crew
+- `allow_delegation=True` on coordinator is needed for hierarchical delegation to work
+- CrewAI's hierarchical process has high overhead per delegation round — each question may need multiple delegations
+- Baseline with single agent + all tools performs better for simpler questions (less delegation overhead)

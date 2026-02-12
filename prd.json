@@ -64,7 +64,7 @@
         "uv run python scripts/run_eval.py --framework crewai --scenario multi_agent_coordination --mode capability --skip-code-review --query-timeout-seconds 300 completes without error"
       ],
       "priority": 4,
-      "passes": false
+      "passes": true
     },
     {
       "id": "FW-005",
