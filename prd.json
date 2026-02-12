@@ -1,0 +1,87 @@
+{
+  "branchName": "feat/add-crewai",
+  "userStories": [
+    {
+      "id": "FW-001",
+      "title": "Add CrewAI framework implementation (rag_qa)",
+      "description": "Implement the RAGFramework Protocol using CrewAI's agent/task/crew abstraction for the rag_qa scenario. This is the base implementation.",
+      "acceptanceCriteria": [
+        "frameworks/crewai/ directory exists with pyproject.toml, AGENTS.md, src/impl_crewai/__init__.py, src/impl_crewai/rag_qa.py",
+        "rag_qa.py implements RAGFramework Protocol: name property, async ingest(), async query(), async cleanup()",
+        "Constructor accepts model: str and embedding_store: EmbeddingStore | None",
+        "query() returns RunResult with populated UsageStats (prompt_tokens, completion_tokens, total_tokens, latency_seconds, model_name)",
+        "Uses shared EmbeddingStore when provided, falls back to own chromadb collection otherwise",
+        "Registered in scripts/run_eval.py: _FRAMEWORK_CLASS_NAMES, FRAMEWORKS list, and _format_model_for_framework()",
+        "Added as workspace member in root pyproject.toml",
+        "uv sync --all-packages succeeds without errors",
+        "uv run python scripts/run_eval.py --framework crewai --scenario rag_qa --skip-code-review completes without error",
+        "Achieves correctness >= 3.0/5 on rag_qa baseline"
+      ],
+      "priority": 1,
+      "passes": true
+    },
+    {
+      "id": "FW-002",
+      "title": "Add CrewAI multihop_qa scenario implementation",
+      "description": "Implement multihop_qa.py for CrewAI. Follow the pattern from existing frameworks: iterative retrieval with sufficiency checking in capability mode, single-pass in baseline. Must implement ConfigurableFramework.configure().",
+      "acceptanceCriteria": [
+        "src/impl_crewai/multihop_qa.py exists and implements the LangGraphRAG-equivalent class (same class name as rag_qa.py)",
+        "Implements ConfigurableFramework.configure() for baseline/capability mode switching",
+        "Baseline mode: single retrieval pass + generate",
+        "Capability mode: iterative retrieval with sufficiency assessment (max_steps from mode_config)",
+        "uv run python scripts/run_eval.py --framework crewai --scenario multihop_qa --skip-code-review completes without error",
+        "uv run python scripts/run_eval.py --framework crewai --scenario multihop_qa --mode capability --skip-code-review completes without error"
+      ],
+      "priority": 2,
+      "passes": false
+    },
+    {
+      "id": "FW-003",
+      "title": "Add CrewAI agentic_sql_qa scenario implementation",
+      "description": "Implement agentic_sql_qa.py for CrewAI. Uses shared AgenticSQLRuntime for tool logic (run_sql, lookup_doc). Must support tool-calling loop with configurable max_tool_calls.",
+      "acceptanceCriteria": [
+        "src/impl_crewai/agentic_sql_qa.py exists",
+        "Uses AgenticSQLRuntime from shared.agentic_sql for tool logic",
+        "Exposes run_sql and lookup_doc as CrewAI tools",
+        "Implements ConfigurableFramework.configure() with max_steps and max_tool_calls from mode_config",
+        "uv run python scripts/run_eval.py --framework crewai --scenario agentic_sql_qa --skip-code-review completes without error",
+        "uv run python scripts/run_eval.py --framework crewai --scenario agentic_sql_qa --mode capability --skip-code-review completes without error"
+      ],
+      "priority": 3,
+      "passes": false
+    },
+    {
+      "id": "FW-004",
+      "title": "Add CrewAI multi_agent_coordination scenario implementation",
+      "description": "Implement multi_agent_coordination.py for CrewAI. Baseline: single agent with all 3 tools. Capability: multi-agent with specialist agents (infrastructure, security, runbook) coordinated by a manager. Uses shared MultiAgentRuntime.",
+      "acceptanceCriteria": [
+        "src/impl_crewai/multi_agent_coordination.py exists",
+        "Uses MultiAgentRuntime from shared.multi_agent_coordination for tool logic",
+        "Baseline mode: single agent with query_infrastructure, query_security, query_runbook tools",
+        "Capability mode: multiple CrewAI agents (coordinator + specialists) with delegation",
+        "Implements ConfigurableFramework.configure() with max_steps and max_tool_calls from mode_config",
+        "uv run python scripts/run_eval.py --framework crewai --scenario multi_agent_coordination --skip-code-review completes without error",
+        "uv run python scripts/run_eval.py --framework crewai --scenario multi_agent_coordination --mode capability --skip-code-review --query-timeout-seconds 300 completes without error"
+      ],
+      "priority": 4,
+      "passes": false
+    },
+    {
+      "id": "FW-005",
+      "title": "Run all scenarios with all 4 frameworks and update RESULTS_SUMMARY.md",
+      "description": "Run all 4 scenarios (rag_qa, multihop_qa, agentic_sql_qa, multi_agent_coordination) across all 4 frameworks in both baseline and capability modes. Update RESULTS_SUMMARY.md with CrewAI results alongside the existing 3 frameworks.",
+      "acceptanceCriteria": [
+        "uv run python scripts/run_eval.py --all --scenario rag_qa --skip-code-review completes for all 4 frameworks",
+        "uv run python scripts/run_eval.py --all --scenario multihop_qa --mode capability --skip-code-review completes for all 4 frameworks",
+        "uv run python scripts/run_eval.py --all --scenario agentic_sql_qa --mode capability --skip-code-review completes for all 4 frameworks",
+        "uv run python scripts/run_eval.py --all --scenario multi_agent_coordination --mode capability --skip-code-review --query-timeout-seconds 300 completes for all 4 frameworks",
+        "uv run python scripts/run_eval.py --all --scenario multi_agent_coordination --mode baseline --skip-code-review completes for all 4 frameworks",
+        "All comparison reports generated in results/",
+        "RESULTS_SUMMARY.md updated: all existing tables include a CrewAI column, with analysis of how CrewAI compares",
+        "Commit: feat: add CrewAI benchmark results across all scenarios"
+      ],
+      "priority": 5,
+      "passes": false
+    }
+  ]
+}

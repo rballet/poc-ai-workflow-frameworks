@@ -14,4 +14,5 @@ members = [
     "frameworks/langgraph",
     "frameworks/pydantic_ai",
     "frameworks/smolagents",
+    "frameworks/crewai",
 ]

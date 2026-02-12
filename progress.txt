@@ -1,0 +1,63 @@
+# Progress Log
+
+## Project State (2026-02-12)
+
+Existing frameworks: pydantic_ai, langgraph, smolagents — all fully implemented across 4 scenarios.
+
+### Critical Conventions (read before every iteration)
+
+- RAGFramework Protocol: `name` property, `async ingest()`, `async query()`, `async cleanup()`
+- ConfigurableFramework: optional `configure(mode, scenario_name, scenario_type, scenario_config, mode_config)`
+- Constructor signature: `__init__(self, model: str = MODEL, embedding_store: EmbeddingStore | None = None)`
+- smolagents is the exception: uses `model_id` instead of `model` parameter
+- UsageStats fields: prompt_tokens, completion_tokens, total_tokens, latency_seconds, model_name
+- Registration in run_eval.py requires 3 places: _FRAMEWORK_CLASS_NAMES dict, FRAMEWORKS list, _format_model_for_framework()
+- _format_model_for_framework() maps raw model names to framework-specific format:
+  - pydantic_ai: "anthropic:model" or "openai:model"
+  - langgraph: raw model name (routing handled by _make_llm helper)
+  - smolagents: "anthropic/model" or "openai/model" (LiteLLM format)
+- Root pyproject.toml workspace members must include the new framework path
+- uv sync --all-packages to install after adding a new workspace member
+- If uv sync fails with tiktoken errors: rm -rf .venv && uv sync --all-packages
+- load_dotenv(override=True) is used in run_eval.py to handle empty env vars
+- GPT-5-mini does not support temperature=0 or stop sequences
+- Test with: uv run python scripts/run_eval.py --framework <name> --scenario rag_qa --skip-code-review
+
+### Reference implementation pattern (from pydantic_ai/rag_qa.py)
+
+1. Module-level MODEL constant (default "gpt-5-mini")
+2. Class with __init__(model, embedding_store) storing both
+3. ingest(): if embedding_store provided, skip embedding; otherwise use chromadb + OpenAI embeddings
+4. query(): retrieve via embedding_store or chromadb, call LLM, measure latency, extract tokens
+5. cleanup(): delete chromadb collection if created locally
+6. Return RunResult(answer=Answer(...), usage=UsageStats(...))
+
+## FW-001: CrewAI rag_qa implementation (2026-02-12)
+
+### What was implemented
+- Created `frameworks/crewai/` directory with pyproject.toml, AGENTS.md, src/impl_crewai/__init__.py, rag_qa.py
+- `CrewAIRAG` class implementing RAGFramework Protocol
+- Registered in run_eval.py (3 places) and root pyproject.toml workspace members
+
+### Files changed
+- `frameworks/crewai/pyproject.toml` — new, depends on crewai>=0.108, chromadb, openai, shared
+- `frameworks/crewai/AGENTS.md` — new, documents architecture and key APIs
+- `frameworks/crewai/src/impl_crewai/__init__.py` — new, package init
+- `frameworks/crewai/src/impl_crewai/rag_qa.py` — new, main implementation
+- `scripts/run_eval.py` — added crewai to sys.path, _FRAMEWORK_CLASS_NAMES, FRAMEWORKS, _format_model_for_framework
+- `pyproject.toml` — added "frameworks/crewai" to workspace members
+
+### Results
+- Avg Correctness: 4.4/5, Completeness: 4.4/5, Faithfulness: 5.0/5
+- Retrieval Precision: 1.00, Recall: 1.00
+- Total Tokens: 50912, Avg Latency: 13.13s
+
+### Learnings and gotchas
+- CrewAI uses LiteLLM format for model names: `"openai/gpt-5-mini"` (same as smolagents)
+- `_format_model_for_framework()` groups crewai with smolagents for `"provider/model"` format
+- `crew.akickoff()` does NOT exist in crewai 1.6.1 — use `crew.kickoff_async()` instead
+- `result.token_usage` is a Pydantic `UsageMetrics` model (not a dict) — access via `.prompt_tokens`, `.completion_tokens`, `.total_tokens` attributes
+- Must set `CREWAI_TRACING_ENABLED=false` env var to avoid interactive tracing prompt during eval
+- CrewAI Agent reuses across queries but Task+Crew must be created per query (task description varies)
+- `verbose=False` on both Agent and Crew to suppress internal logging
+- CrewAI is heavier than other frameworks for simple RAG — higher token usage due to agent system prompts

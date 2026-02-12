@@ -18,7 +18,7 @@ load_dotenv(override=True)  # Load .env file from project root (override empty v
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "shared-lib" / "src"))
-for _framework in ("langgraph", "pydantic_ai", "smolagents"):
+for _framework in ("langgraph", "pydantic_ai", "smolagents", "crewai"):
     sys.path.insert(0, str(ROOT / "frameworks" / _framework / "src"))
 
 from shared.eval.harness import FrameworkEvaluation, average_evaluations, evaluate_framework  # noqa: E402
@@ -62,6 +62,7 @@ _FRAMEWORK_CLASS_NAMES = {
     "pydantic_ai": "PydanticAIRAG",
     "langgraph": "LangGraphRAG",
     "smolagents": "SmolAgentsRAG",
+    "crewai": "CrewAIRAG",
 }
 
 
@@ -84,7 +85,7 @@ def _format_model_for_framework(framework_name: str, raw_model: str) -> str:
 
     if framework_name == "pydantic_ai":
         return f"{provider}:{raw_model}"
-    elif framework_name == "smolagents":
+    elif framework_name in ("smolagents", "crewai"):
         return f"{provider}/{raw_model}"
     else:
         # langgraph — raw name; provider routing is handled by _make_llm helper
@@ -348,7 +349,7 @@ async def run_with_repeats(
     return aggregated
 
 
-FRAMEWORKS = ["pydantic_ai", "langgraph", "smolagents"]
+FRAMEWORKS = ["pydantic_ai", "langgraph", "smolagents", "crewai"]
 
 
 async def main():
