@@ -33,7 +33,7 @@
         "uv run python scripts/run_eval.py --framework crewai --scenario multihop_qa --mode capability --skip-code-review completes without error"
       ],
       "priority": 2,
-      "passes": false
+      "passes": true
     },
     {
       "id": "FW-003",

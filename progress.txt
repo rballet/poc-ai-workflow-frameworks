@@ -61,3 +61,27 @@ Existing frameworks: pydantic_ai, langgraph, smolagents — all fully implemente
 - CrewAI Agent reuses across queries but Task+Crew must be created per query (task description varies)
 - `verbose=False` on both Agent and Crew to suppress internal logging
 - CrewAI is heavier than other frameworks for simple RAG — higher token usage due to agent system prompts
+
+## FW-002: CrewAI multihop_qa implementation (2026-02-12)
+
+### What was implemented
+- `frameworks/crewai/src/impl_crewai/multihop_qa.py` — multihop QA with planning, validation, and iterative retrieval
+- Same `CrewAIRAG` class name (required by framework registration)
+- Baseline: single retrieval pass + generate (single Crew run)
+- Capability: planner Crew → retrieve subqueries → answer Crew → checker Crew → optional re-retrieve + re-answer
+
+### Files changed
+- `frameworks/crewai/src/impl_crewai/multihop_qa.py` — new
+
+### Results
+- Baseline: correctness 3.9/5, completeness 3.7/5, faithfulness 4.7/5, tokens 85K
+- Capability: correctness 4.1/5, completeness 3.8/5, faithfulness 4.8/5, tokens 1.3M, latency 70s
+- Capability mode shows improved retrieval recall (0.93 vs 0.70) and hop coverage
+
+### Learnings and gotchas
+- CrewAI has very high token usage in capability mode (~1.3M tokens for 9 questions) due to verbose agent system prompts per Crew run
+- Structured output: CrewAI doesn't natively return parsed JSON from tasks; must parse JSON from raw text output
+- `_parse_json_from_text()` helper needed to handle markdown code fences and extra text around JSON
+- Multiple sequential Crew runs accumulate tokens — extract from each `result.token_usage` and sum
+- Agents can be reused across Crew instances, reducing setup overhead
+- Running 3-4 sequential Crews per question is slow but works correctly

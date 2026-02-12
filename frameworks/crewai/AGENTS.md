@@ -19,6 +19,28 @@ Uses a CrewAI Agent/Task/Crew with a fixed retrieve-then-generate pipeline:
 - `crew_output.raw` — string answer
 - `crew_output.token_usage` — `UsageMetrics` pydantic model with `.prompt_tokens`, `.completion_tokens`, `.total_tokens`
 
+## Multihop QA Architecture (`multihop_qa.py`)
+Uses three specialized agents for iterative retrieval with planning and validation:
+1. **Planner Agent** — generates retrieval subqueries for multi-hop questions (returns JSON)
+2. **Answer Agent** — generates answers from retrieved context
+3. **Checker Agent** — validates answer sufficiency and suggests follow-up queries (returns JSON)
+
+### Baseline mode
+Single retrieval pass + single answer Crew run.
+
+### Capability mode
+1. Planner Crew → parse subqueries from JSON output
+2. Retrieve for each planned subquery
+3. Answer Crew → draft answer
+4. Checker Crew → assess sufficiency, get missing queries
+5. If not sufficient: retrieve missing queries → final Answer Crew
+
+### Key patterns
+- `_parse_json_from_text()` — extracts JSON from raw text (handles code fences, extra text)
+- `_run_crew()` helper — creates Task + Crew for a single agent, returns CrewOutput
+- Token accumulation: sum `.prompt_tokens` / `.completion_tokens` across all Crew runs
+- Agents reused across Crew instances (LLM shared via `_ensure_llm()`)
+
 ## Notes
 - Model specified as `"openai/gpt-5-mini"` (LiteLLM provider/model format)
 - `crew.akickoff()` does NOT exist in v1.6.1 — use `crew.kickoff_async()` instead
