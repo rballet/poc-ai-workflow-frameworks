@@ -1,6 +1,6 @@
 # Framework Comparison Report
 
-Generated: 2026-02-11 21:06 UTC
+Generated: 2026-02-12 19:19 UTC
 Scenario: agentic_sql_qa
 Scenario Type: agentic_tool_qa
 Mode: baseline
@@ -9,100 +9,87 @@ Questions: 8
 
 ## Summary
 
-| Metric | Pydantic AI |
+| Metric | CrewAI |
 | --- | --- |
-| Avg Latency (s) | 32.52 |
-| Total Tokens | 24,233 |
-| Est. Cost (USD) | $0.0309 |
-| Avg Correctness (1-5) | 1.6 |
+| Avg Latency (s) | 39.87 |
+| Total Tokens | 26,829 |
+| Est. Cost (USD) | $0.0379 |
+| Avg Correctness (1-5) | 1.5 |
 | Avg Completeness (1-5) | 1.5 |
-| Avg Faithfulness (1-5) | 4.1 |
-| Avg Retrieval Precision | 0.12 |
-| Avg Retrieval Recall | 0.16 |
+| Avg Faithfulness (1-5) | 3.4 |
+| Avg Retrieval Precision | 0.31 |
+| Avg Retrieval Recall | 0.20 |
 
 ## Derived Scorecard (0-100)
 
 These derived scores are computed from existing metrics and shown as decision aids (not as a single winner metric).
 
-| Axis | Pydantic AI |
+| Axis | CrewAI |
 | --- | --- |
-| Capability | 18.3 |
+| Capability | 14.8 |
 | Efficiency | 33.3 |
-| Developer Experience | 95.0 |
+| Developer Experience | 100.0 |
 
 ## Runtime Distribution
 
-| Metric | Pydantic AI |
+| Metric | CrewAI |
 | --- | --- |
-| Latency p50 (s) | 30.30 |
-| Latency p95 (s) | 54.19 |
+| Latency p50 (s) | 28.38 |
+| Latency p95 (s) | 93.02 |
 
 ## Scenario-Specific Metrics
 
-| Metric | Pydantic AI |
+| Metric | CrewAI |
 | --- | --- |
-| Branching Avg Grounded Hop Coverage | 0.083 |
+| Branching Avg Grounded Hop Coverage | 0 |
 | Branching Avg Hop Coverage | 0.167 |
-| Branching Avg Tool Coverage | 0.750 |
+| Branching Avg Tool Coverage | 0.500 |
 | Branching Questions | 4 |
 | Branching Success Avg | 0 |
 | Branching Success Rate | 0 |
 | Easy Avg Hop Coverage | 0.750 |
 | Easy Questions | 4 |
-| Grounded Hop Coverage Avg | 0.167 |
-| Has Tool Trace Avg | 1 |
+| Grounded Hop Coverage Avg | 0.125 |
+| Has Tool Trace Avg | 0.875 |
 | Hop Coverage Avg | 0.458 |
 | Is Branching Avg | 0.500 |
 | Is Easy Avg | 0.500 |
 | Matched Hops Avg | 0.625 |
-| Matched Tools Avg | 1.250 |
+| Matched Tools Avg | 1 |
 | Required Hops Avg | 2 |
 | Required Tools Avg | 1.500 |
-| Tool Calls Reported Avg | 1 |
-| Tool Coverage Avg | 0.875 |
-| Tool Trace Rate | 1 |
+| Tool Calls Reported Avg | 0.875 |
+| Tool Coverage Avg | 0.750 |
+| Tool Trace Rate | 0.875 |
 
 ## Code Quality — Static Metrics
 
-| Metric | Pydantic AI |
+| Metric | CrewAI |
 | --- | --- |
-| Source Lines (SLOC) | 132 |
+| Source Lines (SLOC) | 156 |
 | Comment Ratio | 0% |
-| Avg Cyclomatic Complexity | 2.2 |
-| Max Cyclomatic Complexity | 6 |
+| Avg Cyclomatic Complexity | 2.4 |
+| Max Cyclomatic Complexity | 7 |
 | Complexity Grade | A |
-| Maintainability Index | 40.0 |
+| Maintainability Index | 45.8 |
 | Maintainability Grade | A |
-| Halstead Volume | 175 |
-| Halstead Difficulty | 3.8 |
-| Halstead Bugs (est.) | 0.06 |
-| Total Imports | 8 |
-| Framework Imports | 1 |
-| Classes | 2 |
-| Functions | 9 |
+| Halstead Volume | 204 |
+| Halstead Difficulty | 4.5 |
+| Halstead Bugs (est.) | 0.07 |
+| Total Imports | 9 |
+| Framework Imports | 0 |
+| Classes | 5 |
+| Functions | 8 |
 | Type Annotation Coverage | 100% |
-
-## Code Quality — LLM Code Review
-
-| Criterion | Pydantic AI |
-| --- | --- |
-| Readability | 5 |
-| Idiomatic Usage | 4 |
-| Error Handling | 3 |
-| Extensibility | 4 |
-| Testability | 4 |
-| Documentation | 4 |
-| Abstraction | 4 |
-| **Average** | 4.0 |
 
 ## Per-Question Results
 
 ### q1: What account tier and operating region does Acme Health belong to?
 
-| Metric | Pydantic AI |
+| Metric | CrewAI |
 | --- | --- |
-| Latency (s) | 13.23 |
-| Tokens | 1,794 |
+| Latency (s) | 23.46 |
+| Tokens | 3,499 |
 | Correctness | 1 |
 | Completeness | 1 |
 | Faithfulness | 5 |
@@ -123,17 +110,20 @@ These derived scores are computed from existing metrics and shown as decision ai
 
 **Answers:**
 
-- **Pydantic AI**: I can't determine Acme Health's account tier or operating region from the evidence available. The only tool result I could retrieve shows the database contains a customers table (plus others), but I did not get any customer rows or the customers table schema.
+- **CrewAI**: I could not find Acme Health's account tier and operating region from the available evidence. To obtain them, run this query against the database:
 
-Evidence collected:
-- Tables present: c...
+SELECT tier, region FROM customers WHERE name = 'Acme Health';
+
+If the exact name may differ, try:
+
+SELECT tier, region, name FROM customers WHERE name ...
 
 ### q2: Are weather-related shipment delays eligible for shipping credits?
 
-| Metric | Pydantic AI |
+| Metric | CrewAI |
 | --- | --- |
-| Latency (s) | 19.85 |
-| Tokens | 1,351 |
+| Latency (s) | 14.47 |
+| Tokens | 2,518 |
 | Correctness | 5 |
 | Completeness | 5 |
 | Faithfulness | 5 |
@@ -154,17 +144,26 @@ Evidence collected:
 
 **Answers:**
 
-- **Pydantic AI**: No. The Shipping Credit Policy explicitly excludes weather as an eligible delay reason.
+- **CrewAI**: # Support Policies
 
-Evidence from policy:
-- Eligibility requires: (1) status = delivered, (2) delivery delay ≥ 24 hours, and (3) delay reason is not weather, customs hold, or force majeure.
+## Shipping Credit Policy
+
+An order is eligible for a shipping credit when all of the following are true:
+
+1. Status is `delivered`.
+2. Delivery delay is **24 hours or more**.
+3. Delay reason is **not** weather, customs hold, or force majeure.
+
+Credit caps by account tier:
+
+- Ent...
 
 ### q3: How many unresolved P1 incidents are currently open?
 
-| Metric | Pydantic AI |
+| Metric | CrewAI |
 | --- | --- |
-| Latency (s) | 26.10 |
-| Tokens | 2,234 |
+| Latency (s) | 30.96 |
+| Tokens | 3,766 |
 | Correctness | 1 |
 | Completeness | 1 |
 | Faithfulness | 1 |
@@ -185,21 +184,77 @@ Evidence from policy:
 
 **Answers:**
 
-- **Pydantic AI**: I couldn’t return a count because my first query used a non‑existent column (incidents.priority). The schema shows priority and status live in the support_cases table (support_cases: case_id, customer_id, order_id, priority, status, opened_at, ...).
-
-I can get the number if you want me to run a quer...
+- **CrewAI**: I cannot determine the number of unresolved P1 incidents because I was unable to run a successful query against the table that contains priority (the earlier query failed: incidents has no priority column). The schema evidence shows the relevant fields exist in support_cases (support_cases: case_id,...
 
 ### q4: Can order ORD-104 receive a shipping credit, and what is the maximum amount?
 
-| Metric | Pydantic AI |
+| Metric | CrewAI |
 | --- | --- |
-| Latency (s) | 40.04 |
-| Tokens | 3,290 |
+| Latency (s) | 120.00 |
+| Tokens | 0 |
+| Correctness | 0 |
+| Completeness | 0 |
+| Faithfulness | 0 |
+| Retrieval Prec | 0.00 |
+| Retrieval Recall | 0.00 |
+| Branching Success | 0 |
+| Grounded Hop Coverage | 0 |
+| Has Tool Trace | 0 |
+| Hop Coverage | 0 |
+| Is Branching | 1 |
+| Is Easy | 0 |
+| Matched Hops | 0 |
+| Matched Tools | 0 |
+| Required Hops | 3 |
+| Required Tools | 2 |
+| Tool Calls Reported | 0 |
+| Tool Coverage | 0 |
+
+**Answers:**
+
+- **CrewAI**: Query timed out before producing an answer.
+
+### q5: Should CASE-778 be auto-escalated, and which team should own it?
+
+| Metric | CrewAI |
+| --- | --- |
+| Latency (s) | 42.92 |
+| Tokens | 4,903 |
 | Correctness | 1 |
 | Completeness | 1 |
 | Faithfulness | 5 |
 | Retrieval Prec | 0.00 |
 | Retrieval Recall | 0.00 |
+| Branching Success | 0 |
+| Grounded Hop Coverage | 0 |
+| Has Tool Trace | 1 |
+| Hop Coverage | 0 |
+| Is Branching | 1 |
+| Is Easy | 0 |
+| Matched Hops | 0 |
+| Matched Tools | 2 |
+| Required Hops | 3 |
+| Required Tools | 2 |
+| Tool Calls Reported | 1 |
+| Tool Coverage | 1 |
+
+**Answers:**
+
+- **CrewAI**: I cannot determine whether CASE-778 should be auto-escalated or which team should own it because I could not retrieve any policy documents or case data — the single allowed tool call (lookup_doc) exhausted the tool-call budget and returned no usable evidence.
+
+What is missing (explicit list of requi...
+
+### q6: For order ORD-109, what customer-facing compensation should be offered?
+
+| Metric | CrewAI |
+| --- | --- |
+| Latency (s) | 25.80 |
+| Tokens | 3,439 |
+| Correctness | 1 |
+| Completeness | 1 |
+| Faithfulness | 5 |
+| Retrieval Prec | 1.00 |
+| Retrieval Recall | 0.25 |
 | Branching Success | 0 |
 | Grounded Hop Coverage | 0 |
 | Has Tool Trace | 1 |
@@ -215,80 +270,26 @@ I can get the number if you want me to run a quer...
 
 **Answers:**
 
-- **Pydantic AI**: I can’t determine whether ORD-104 can receive a shipping credit or the maximum amount from the evidence available: my only tool call returned the database schema (tables and columns) but did not return any rows for order ORD-104 or any shipping-credit policy data.
+- **CrewAI**: I queried the orders table for ORD-109. The database record I found:
 
-What I inspected (from the schema ...
+- order_id: ORD-109
+- customer_id: C001
+- created_at: 2026-02-07T09:00:00Z
+- total_usd: 9500.0
+- status: delivered
+- warehouse: WH-ATL
 
-### q5: Should CASE-778 be auto-escalated, and which team should own it?
-
-| Metric | Pydantic AI |
-| --- | --- |
-| Latency (s) | 45.20 |
-| Tokens | 3,449 |
-| Correctness | 1 |
-| Completeness | 1 |
-| Faithfulness | 5 |
-| Retrieval Prec | 0.00 |
-| Retrieval Recall | 0.00 |
-| Branching Success | 0 |
-| Grounded Hop Coverage | 0 |
-| Has Tool Trace | 1 |
-| Hop Coverage | 0 |
-| Is Branching | 1 |
-| Is Easy | 0 |
-| Matched Hops | 0 |
-| Matched Tools | 2 |
-| Required Hops | 3 |
-| Required Tools | 2 |
-| Tool Calls Reported | 1 |
-| Tool Coverage | 1 |
-
-**Answers:**
-
-- **Pydantic AI**: I can’t tell from available evidence whether CASE-778 should be auto‑escalated because the case row itself was not retrieved. My attempted query targeted a non‑existent table; the database schema shows the correct tables and columns but I don’t have the CASE-778 record.
-
-What I do have (from schema ...
-
-### q6: For order ORD-109, what customer-facing compensation should be offered?
-
-| Metric | Pydantic AI |
-| --- | --- |
-| Latency (s) | 59.03 |
-| Tokens | 5,409 |
-| Correctness | 1 |
-| Completeness | 1 |
-| Faithfulness | 5 |
-| Retrieval Prec | 0.50 |
-| Retrieval Recall | 0.25 |
-| Branching Success | 0 |
-| Grounded Hop Coverage | 0.333 |
-| Has Tool Trace | 1 |
-| Hop Coverage | 0.667 |
-| Is Branching | 1 |
-| Is Easy | 0 |
-| Matched Hops | 2 |
-| Matched Tools | 2 |
-| Required Hops | 3 |
-| Required Tools | 2 |
-| Tool Calls Reported | 1 |
-| Tool Coverage | 1 |
-
-**Answers:**
-
-- **Pydantic AI**: I don’t have the order details for ORD-109 available from the tools called, so I can’t say exactly what to offer. To determine the customer-facing compensation I need these order fields:
-
-- incident_type (e.g., payment_gateway, fraud_review, pick_pack_error, etc.)  
-- order status (delivered, failed...
+There is no information in that record about an issue, return, refund, or any compensation alr...
 
 ### q7: Who is the current on-call engineer for the Commercial team?
 
-| Metric | Pydantic AI |
+| Metric | CrewAI |
 | --- | --- |
-| Latency (s) | 22.23 |
-| Tokens | 3,150 |
+| Latency (s) | 25.05 |
+| Tokens | 3,673 |
 | Correctness | 1 |
 | Completeness | 1 |
-| Faithfulness | 2 |
+| Faithfulness | 1 |
 | Retrieval Prec | 0.00 |
 | Retrieval Recall | 0.00 |
 | Branching Success | 0 |
@@ -306,28 +307,26 @@ What I do have (from schema ...
 
 **Answers:**
 
-- **Pydantic AI**: I don't have the on-call engineer listed in the evidence I retrieved. From the database schema I can confirm there is an oncall table with columns (team, primary_engineer, secondary_engineer), but I did not fetch the table rows.
-
-If you want me to look up the current Commercial on-call, I need one q...
+- **CrewAI**: The database schema includes an oncall table with columns (team, primary_engineer, secondary_engineer), but I did not retrieve its rows — the current on-call engineer for the Commercial team is not available from the evidence gathered. To determine the current on-call engineer, run this query agains...
 
 ### q8: Northwind Hospitals has an open issue on ORD-109. Should we wake the Sev1 commander now, or keep it with account support?
 
-| Metric | Pydantic AI |
+| Metric | CrewAI |
 | --- | --- |
-| Latency (s) | 34.51 |
-| Tokens | 3,556 |
+| Latency (s) | 36.29 |
+| Tokens | 5,031 |
 | Correctness | 2 |
-| Completeness | 1 |
+| Completeness | 2 |
 | Faithfulness | 5 |
-| Retrieval Prec | 0.00 |
-| Retrieval Recall | 0.00 |
+| Retrieval Prec | 1.00 |
+| Retrieval Recall | 0.33 |
 | Branching Success | 0 |
 | Grounded Hop Coverage | 0 |
 | Has Tool Trace | 1 |
-| Hop Coverage | 0 |
+| Hop Coverage | 0.667 |
 | Is Branching | 1 |
 | Is Easy | 0 |
-| Matched Hops | 0 |
+| Matched Hops | 2 |
 | Matched Tools | 1 |
 | Required Hops | 3 |
 | Required Tools | 2 |
@@ -336,4 +335,4 @@ If you want me to look up the current Commercial on-call, I need one q...
 
 **Answers:**
 
-- **Pydantic AI**: I can’t determine whether to wake the Sev1 commander from the data I can access right now — my only successful query returned the list of available tables (customers, incidents, oncall, orders, shipments, support_cases) and I do not have any details for ORD-109. I’ve used the one-call budget allowed...
+- **CrewAI**: I do not have any case-specific evidence (severity, age, whether multiple customers are affected, compliance/legal trigger, or order value/account tier) for ORD-109, so I cannot unambiguously decide to wake the Sev1 commander. Policy guidance from the support docs (verbatim from the policy search re...

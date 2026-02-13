@@ -135,3 +135,28 @@ Existing frameworks: pydantic_ai, langgraph, smolagents — all fully implemente
 - `allow_delegation=True` on coordinator is needed for hierarchical delegation to work
 - CrewAI's hierarchical process has high overhead per delegation round — each question may need multiple delegations
 - Baseline with single agent + all tools performs better for simpler questions (less delegation overhead)
+
+## FW-005: Run all benchmarks and update RESULTS_SUMMARY.md (2026-02-12/13)
+
+### What was done
+- Ran all 5 eval commands with `--all` across all 4 frameworks (pydantic_ai, langgraph, smolagents, crewai)
+- Commands: rag_qa baseline, multihop_qa capability, agentic_sql_qa capability, multi_agent_coordination baseline+capability
+- Updated RESULTS_SUMMARY.md with CrewAI columns in all tables and analysis
+
+### Results summary (all frameworks, GPT-5-mini)
+- RAG QA baseline: all 4 at parity (4.4/5)
+- Multihop QA capability: LangGraph 4.1 > Pydantic AI 3.8 = CrewAI 3.8 > smolagents 3.3
+- Agentic SQL capability: LangGraph 5.0 = CrewAI 5.0 > Pydantic AI 4.8 > smolagents 2.5
+- Multi-agent coord capability: Pydantic AI 4.9 >> LangGraph 3.6 >> smolagents 1.0 >> CrewAI 0.2
+- Multi-agent coord baseline: Pydantic AI 3.7 ≈ LangGraph 3.6 > CrewAI 2.6 > smolagents 1.4
+
+### Key CrewAI findings
+- CrewAI's best scenario is agentic SQL (5.0/5) — single-agent tool calling via BaseTool works excellently
+- CrewAI's worst scenario is multi-agent coordination capability (0.2/5) — hierarchical process + stop sequence issues = almost total failure
+- Token usage is consistently highest among all frameworks (7-26x more than Pydantic AI) due to CrewAI's verbose internal system prompts
+- Cost is prohibitive for complex scenarios ($1.91 for multihop, $3.06 for multi-agent coordination)
+
+### Files changed
+- `RESULTS_SUMMARY.md` — updated all tables with CrewAI column, added all-scenario summary, updated analysis
+- `prd.json` — set FW-005 passes to true
+- `results/comparison_*.md` — all 5 comparison reports regenerated with 4-framework data
